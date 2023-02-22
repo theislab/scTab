@@ -15,8 +15,8 @@ from cellnet.estimators import EstimatorCellTypeClassifier
 def get_paths(cluster: str, model: str):
     if cluster == 'jsc':
         return (
-            os.path.join('/p/scratch/ccstdl/theislab/tb_logs/', model),
-            os.path.join('/p/scratch/ccstdl/theislab/tb_logs', model),
+            os.path.join('/p/scratch/hai_sfaira/tb_logs/', model),
+            os.path.join('/p/scratch/hai_sfaira/tb_logs', model),
             '/p/scratch/ccstdl/theislab/merlin_cxg_norm_parquet'
         )
     elif cluster == 'icb':
