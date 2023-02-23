@@ -58,6 +58,7 @@ class EstimatorCellTypeClassifier:
             'feature_means': np.load(join(self.data_path, 'norm/zero_centering/means.npy')),
             'class_weights': np.load(join(self.data_path, 'class_weights.npy')),
             'parent_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/parent_matrix.npy')),
+            'child_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/child_matrix.npy')),
             'train_set_size': sum(self.datamodule.train_dataset.partition_lens),
             'val_set_size': sum(self.datamodule.val_dataset.partition_lens),
             'batch_size': self.datamodule.batch_size,
