@@ -203,7 +203,7 @@ class TabnetClassifier(BaseClassifier):
             lr_scheduler=lr_scheduler,
             lr_scheduler_kwargs=lr_scheduler_kwargs
         )
-        self.save_hyperparameters(ignore=['feature_means', 'class_weights', 'parent_matrix'])
+        self.save_hyperparameters(ignore=['feature_means', 'class_weights', 'parent_matrix', 'child_matrix'])
 
         self.lambda_sparse = lambda_sparse
         self.classifier = TabNet(
