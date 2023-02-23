@@ -2,6 +2,7 @@ import abc
 import gc
 from typing import Callable, Dict
 
+import functorch
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -23,6 +24,7 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         type_dim: int,
         feature_means: np.ndarray,
         class_weights: np.ndarray,
+        parent_matrix: np.ndarray,
         # params from datamodule
         train_set_size: int,
         val_set_size: int,
@@ -64,15 +66,25 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
 
         self.ce_loss = nn.CrossEntropyLoss(weight=torch.tensor(class_weights.astype('f4')))
 
+        self.parent_lookup = nn.Embedding.from_pretrained(torch.tensor(parent_matrix.astype('f8')), freeze=True)
+        self.get_hierarchy_corrected_preds = functorch.vmap(self._get_hierarchy_corrected_pred)
+
     @abc.abstractmethod
     def _step(self, batch) -> (torch.Tensor, torch.Tensor):
         """Calculate predictions (int64 tensor) and loss"""
         pass
 
+    def _get_hierarchy_corrected_pred(self, logit, label):
+        pred = torch.argmax(logit)
+        label_is_parent_node_or_node = self.parent_lookup(pred) * F.one_hot(label, self.type_dim)
+
+        return torch.where(torch.gt(torch.sum(label_is_parent_node_or_node), 0.), label, pred)
+
     def on_after_batch_transfer(self, batch, dataloader_idx):
-        batch = batch[0]
-        # zero center data
-        batch['X'] = batch['X'] - self.feature_means
+        with torch.no_grad():
+            batch = batch[0]
+            # zero center data
+            batch['X'] = batch['X'] - self.feature_means
 
         return batch
 
@@ -80,9 +92,11 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         return self.classifier(batch['X'])
 
     def training_step(self, batch, batch_idx):
-        preds, loss = self._step(batch)
-        self.log('train_loss', loss, on_epoch=True)
-        self.log_dict(self.train_metrics(preds, batch['cell_type']), on_epoch=True)
+        logits, loss = self._step(batch)
+        with torch.no_grad():
+            self.log('train_loss', loss, on_epoch=True)
+            preds = self.get_hierarchy_corrected_preds(logits, batch['cell_type'])
+            self.log_dict(self.train_metrics(preds, batch['cell_type']), on_epoch=True)
 
         if batch_idx % self.gc_freq == 0:
             gc.collect()
@@ -90,19 +104,23 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        preds, loss = self._step(batch)
-        self.log('val_loss', loss)
-        metrics = self.val_metrics(preds, batch['cell_type'])
-        self.log_dict(metrics)
-        self.log('hp_metric', metrics['val_f1_macro'])
+        logits, loss = self._step(batch)
+        with torch.no_grad():
+            preds = self.get_hierarchy_corrected_preds(logits, batch['cell_type'])
+            self.log('val_loss', loss)
+            metrics = self.val_metrics(preds, batch['cell_type'])
+            self.log_dict(metrics)
+            self.log('hp_metric', metrics['val_f1_macro'])
 
         if batch_idx % self.gc_freq == 0:
             gc.collect()
 
     def test_step(self, batch, batch_idx):
-        preds, loss = self._step(batch)
-        self.log('test_loss', loss)
-        self.log_dict(self.test_metrics(preds, batch['cell_type']))
+        logits, loss = self._step(batch)
+        with torch.no_grad():
+            preds = self.get_hierarchy_corrected_preds(logits, batch['cell_type'])
+            self.log('test_loss', loss)
+            self.log_dict(self.test_metrics(preds, batch['cell_type']))
 
         if batch_idx % self.gc_freq == 0:
             gc.collect()
@@ -140,6 +158,7 @@ class TabnetClassifier(BaseClassifier):
         type_dim: int,
         feature_means: np.ndarray,
         class_weights: np.ndarray,
+        parent_matrix: np.ndarray,
         # params from datamodule
         train_set_size: int,
         val_set_size: int,
@@ -168,6 +187,7 @@ class TabnetClassifier(BaseClassifier):
             type_dim=type_dim,
             feature_means=feature_means,
             class_weights=class_weights,
+            parent_matrix=parent_matrix,
             train_set_size=train_set_size,
             val_set_size=val_set_size,
             batch_size=batch_size,
@@ -177,7 +197,7 @@ class TabnetClassifier(BaseClassifier):
             lr_scheduler=lr_scheduler,
             lr_scheduler_kwargs=lr_scheduler_kwargs
         )
-        self.save_hyperparameters(ignore=['feature_means', 'class_weights'])
+        self.save_hyperparameters(ignore=['feature_means', 'class_weights', 'parent_matrix'])
 
         self.lambda_sparse = lambda_sparse
         self.classifier = TabNet(
@@ -198,10 +218,9 @@ class TabnetClassifier(BaseClassifier):
 
     def _step(self, batch):
         logits, m_loss = self(batch)
-        preds = torch.argmax(logits, dim=1)
         loss = self.ce_loss(logits, batch['cell_type']) - self.lambda_sparse * m_loss
 
-        return preds, loss
+        return logits, loss
 
     def predict_embedding(self, batch):
         embedder = self.classifier.embedder
