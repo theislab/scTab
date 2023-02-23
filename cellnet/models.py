@@ -53,7 +53,7 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         self.lr_scheduler = lr_scheduler
         self.lr_scheduler_kwargs = lr_scheduler_kwargs
 
-        self.register_buffer('feature_means', torch.tensor(feature_means))
+        self.register_buffer('feature_means', torch.tensor(feature_means.astype('f4')))
 
         metrics = MetricCollection({
             'f1_micro': MulticlassF1Score(num_classes=type_dim, average='micro'),
