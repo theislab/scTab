@@ -21,7 +21,9 @@ class EstimatorCellTypeClassifier:
 
     def init_datamodule(
             self,
-            batch_size: int = 2048,
+            batch_size: int = 4096,
+            dataloader_kwargs_train: Dict = None,
+            dataloader_kwargs_inference: Dict = None,
             merlin_dataset_kwargs_train: Dict = None,
             merlin_dataset_kwargs_inference: Dict = None
     ):
@@ -29,9 +31,10 @@ class EstimatorCellTypeClassifier:
             self.data_path,
             columns=['cell_type'],
             batch_size=batch_size,
-            drop_last=True,
-            merlin_dataset_kwargs_train=merlin_dataset_kwargs_train,
-            merlin_dataset_kwargs_inference=merlin_dataset_kwargs_inference
+            dataloader_kwargs_train=dataloader_kwargs_train,
+            dataloader_kwargs_inference=dataloader_kwargs_inference,
+            dataset_kwargs_train=merlin_dataset_kwargs_train,
+            dataset_kwargs_inference=merlin_dataset_kwargs_inference
         )
 
     def init_model(self, model_type: str, model_kwargs):

@@ -39,6 +39,36 @@ def _merlin_dataset_factory(path: str, columns: List[str], dataset_kwargs: Dict)
         )
 
 
+def _set_default_kwargs_dataloader(kwargs: Dict[str, any], train: bool = True):
+    if kwargs is None:
+        kwargs = {}
+
+    parts_per_chunk = 16 if train else 1
+    drop_last = True if train else False
+    shuffle = True if train else False
+
+    if 'parts_per_chunk' not in kwargs:
+        kwargs['parts_per_chunk'] = parts_per_chunk
+    if 'drop_last' not in kwargs:
+        kwargs['drop_last'] = drop_last
+    if'shuffle' not in kwargs:
+        kwargs['shuffle'] = shuffle
+
+    return kwargs
+
+
+def _set_default_kwargs_dataset(kwargs: Dict[str, any], train: bool = True):
+    if kwargs is None:
+        kwargs = {}
+
+    part_size = '100MB' if train else '325MB'
+
+    if all(['part_size' not in kwargs, 'part_mem_fraction' not in kwargs]):
+        kwargs['part_size'] = part_size
+
+    return kwargs
+
+
 class MerlinDataModule(pl.LightningDataModule):
 
     def __init__(
@@ -46,65 +76,36 @@ class MerlinDataModule(pl.LightningDataModule):
             path: str,
             columns: List[str],
             batch_size: int,
-            drop_last: bool = True,
-            merlin_dataset_kwargs_train: Dict = None,
-            merlin_dataset_kwargs_inference: Dict = None
+            dataloader_kwargs_train: Dict = None,
+            dataloader_kwargs_inference: Dict = None,
+            dataset_kwargs_train: Dict = None,
+            dataset_kwargs_inference: Dict = None
     ):
         super(MerlinDataModule).__init__()
-        if merlin_dataset_kwargs_train is None:
-            merlin_dataset_kwargs_train = {}
-        if merlin_dataset_kwargs_inference is None:
-            merlin_dataset_kwargs_inference = {}
 
         for col in columns:
             assert col in PARQUET_SCHEMA.names
 
-        # set default partition size if not supplied
-        default_part_size = '650MB'
-        if all([
-            'part_size' not in merlin_dataset_kwargs_train, 'part_mem_fraction' not in merlin_dataset_kwargs_train
-        ]):
-            merlin_dataset_kwargs_train['part_size'] = default_part_size
-        if all([
-            'part_size' not in merlin_dataset_kwargs_inference,
-            'part_mem_fraction' not in merlin_dataset_kwargs_inference
-        ]):
-            merlin_dataset_kwargs_inference['part_size'] = default_part_size
+        self.dataloader_kwargs_train = _set_default_kwargs_dataloader(dataloader_kwargs_train, train=True)
+        self.dataloader_kwargs_inference = _set_default_kwargs_dataloader(dataloader_kwargs_inference, train=False)
 
-        self.train_dataset = _merlin_dataset_factory(join(path, 'train'), columns, merlin_dataset_kwargs_train)
-        self.val_dataset = _merlin_dataset_factory(join(path, 'val'), columns, merlin_dataset_kwargs_inference)
-        self.test_dataset = _merlin_dataset_factory(join(path, 'test'), columns, merlin_dataset_kwargs_inference)
+        self.train_dataset = _merlin_dataset_factory(
+            join(path, 'train'), columns, _set_default_kwargs_dataset(dataset_kwargs_train, train=True))
+        self.val_dataset = _merlin_dataset_factory(
+            join(path, 'val'), columns, _set_default_kwargs_dataset(dataset_kwargs_inference, train=False))
+        self.test_dataset = _merlin_dataset_factory(
+            join(path, 'test'), columns, _set_default_kwargs_dataset(dataset_kwargs_inference, train=False))
+
         self.batch_size = batch_size
-        self.drop_last = drop_last
 
     def train_dataloader(self):
-        return Loader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            drop_last=self.drop_last
-        )
+        return Loader(self.train_dataset, batch_size=self.batch_size, **self.dataloader_kwargs_train)
 
     def val_dataloader(self):
-        return Loader(
-            self.val_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            drop_last=False
-        )
+        return Loader(self.val_dataset, batch_size=self.batch_size, **self.dataloader_kwargs_inference)
 
     def test_dataloader(self):
-        return Loader(
-            self.test_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            drop_last=False
-        )
+        return Loader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_kwargs_inference)
 
     def predict_dataloader(self):
-        return Loader(
-            self.test_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            drop_last=False
-        )
+        return Loader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_kwargs_inference)
