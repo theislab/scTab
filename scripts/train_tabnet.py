@@ -17,13 +17,13 @@ def get_paths(cluster: str, model: str):
         return (
             os.path.join('/p/scratch/hai_sfaira/tb_logs/', model),
             os.path.join('/p/scratch/hai_sfaira/tb_logs', model),
-            '/p/scratch/ccstdl/theislab/merlin_cxg_norm_parquet'
+            '/p/scratch/ccstdl/theislab/merlin_cxg_simple_norm_parquet'
         )
     elif cluster == 'icb':
         return (
             os.path.join('/lustre/scratch/users/felix.fischer/tb_logs', model),
             os.path.join('/lustre/scratch/users/felix.fischer/tb_logs', model),
-            '/lustre/scratch/users/felix.fischer/merlin_cxg_norm_parquet'
+            '/lustre/scratch/users/felix.fischer/merlin_cxg_simple_norm_parquet'
         )
     else:
         raise ValueError(f'Only "jsc" or "icb" are supported as cluster. You supplied: {cluster}')
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     print(args)
 
     # config parameters
-    MODEL = 'cellnet'
+    MODEL = 'cellnet_simple'
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
 
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
@@ -96,7 +96,7 @@ if __name__ == '__main__':
             'enable_model_summary': False,
             'enable_checkpointing': True,
             'callbacks': [
-                TQDMProgressBar(refresh_rate=500),
+                TQDMProgressBar(refresh_rate=250),
                 LearningRateMonitor(logging_interval='step'),
                 ModelCheckpoint(filename='train_loss_{epoch}_{train_loss:.3f}', monitor='train_loss_epoch', mode='min',
                                 every_n_epochs=args.checkpoint_interval, save_top_k=2),
