@@ -3,9 +3,10 @@ from typing import Dict, List
 
 import merlin.io
 import pyarrow as pa
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 from merlin.dataloader.torch import Loader
 from merlin.schema import ColumnSchema, Schema
+from merlin.dtypes import float32, int64
 
 
 PARQUET_SCHEMA = pa.schema([
@@ -18,6 +19,7 @@ PARQUET_SCHEMA = pa.schema([
     ('disease', pa.int64()),
     ('development_stage', pa.int64()),
     ('organ', pa.int64()),
+    ('idx', pa.int64()),
 ])
 
 
@@ -28,12 +30,12 @@ def _merlin_dataset_factory(path: str, columns: List[str], dataset_kwargs: Dict)
             schema=Schema(
                 [
                     ColumnSchema(
-                        'X', dtype='float32',
+                        'X', dtype=float32,
                         is_list=True, is_ragged=False,
                         properties={'value_count': {'max': 19357}}
                     )
                 ] +
-                [ColumnSchema(col, dtype='int64') for col in columns]
+                [ColumnSchema(col, dtype=int64) for col in columns]
             ),
             **dataset_kwargs
         )
@@ -43,7 +45,7 @@ def _set_default_kwargs_dataloader(kwargs: Dict[str, any], train: bool = True):
     if kwargs is None:
         kwargs = {}
 
-    parts_per_chunk = 16 if train else 1
+    parts_per_chunk = 8 if train else 1
     drop_last = True if train else False
     shuffle = True if train else False
 

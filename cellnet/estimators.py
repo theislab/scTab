@@ -1,13 +1,15 @@
 from os.path import join
 from typing import Dict, List
 
+import dask.dataframe as dd
+import lightning.pytorch as pl
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 import torch
+from lightning.pytorch.tuner.tuning import Tuner
 
 from cellnet.datamodules import MerlinDataModule
-from cellnet.models import TabnetClassifier
+from cellnet.models import TabnetClassifier, LinearClassifier
 
 
 class EstimatorCellTypeClassifier:
@@ -29,7 +31,7 @@ class EstimatorCellTypeClassifier:
     ):
         self.datamodule = MerlinDataModule(
             self.data_path,
-            columns=['cell_type'],
+            columns=['idx', 'cell_type'],
             batch_size=batch_size,
             dataloader_kwargs_train=dataloader_kwargs_train,
             dataloader_kwargs_inference=dataloader_kwargs_inference,
@@ -40,8 +42,10 @@ class EstimatorCellTypeClassifier:
     def init_model(self, model_type: str, model_kwargs):
         if model_type == 'tabnet':
             self.model = TabnetClassifier(**{**self.get_fixed_model_params(), **model_kwargs})
+        elif model_type == 'linear':
+            self.model = LinearClassifier(**{**self.get_fixed_model_params(), **model_kwargs})
         else:
-            raise ValueError(f'model_type has to be in ["linear", "mlp", "tabnet"]. You supplied: {model_type}')
+            raise ValueError(f'model_type has to be in ["linear", "tabnet"]. You supplied: {model_type}')
 
     def init_trainer(self, trainer_kwargs):
         self.trainer = pl.Trainer(**trainer_kwargs)
@@ -60,8 +64,8 @@ class EstimatorCellTypeClassifier:
             'type_dim': len(pd.read_parquet(join(self.data_path, 'categorical_lookup/cell_type.parquet'))),
             'feature_means': np.load(join(self.data_path, 'norm/zero_centering/means.npy')),
             'class_weights': np.load(join(self.data_path, 'class_weights.npy')),
-            'parent_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/parent_matrix.npy')),
             'child_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/child_matrix.npy')),
+            'sample_labels': dd.read_parquet(join(self.data_path, 'train'), columns='cell_type').compute().to_numpy(),
             'train_set_size': sum(self.datamodule.train_dataset.partition_lens),
             'val_set_size': sum(self.datamodule.val_dataset.partition_lens),
             'batch_size': self.datamodule.batch_size,
@@ -69,7 +73,8 @@ class EstimatorCellTypeClassifier:
 
     def find_lr(self, lr_find_kwargs, plot_results: bool = False):
         self._check_is_initialized()
-        lr_finder = self.trainer.tuner.lr_find(
+        tuner = Tuner(self.trainer)
+        lr_finder = tuner.lr_find(
             self.model,
             train_dataloaders=self.datamodule.train_dataloader(),
             val_dataloaders=self.datamodule.val_dataloader(),
