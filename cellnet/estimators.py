@@ -66,6 +66,7 @@ class EstimatorCellTypeClassifier:
             'class_weights': np.load(join(self.data_path, 'class_weights.npy')),
             'child_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/child_matrix.npy')),
             'sample_labels': dd.read_parquet(join(self.data_path, 'train'), columns='cell_type').compute().to_numpy(),
+            'augmentations': np.load(join(self.data_path, 'augmentations.npy')),
             'train_set_size': sum(self.datamodule.train_dataset.partition_lens),
             'val_set_size': sum(self.datamodule.val_dataset.partition_lens),
             'batch_size': self.datamodule.batch_size,
@@ -102,11 +103,11 @@ class EstimatorCellTypeClassifier:
         self._check_is_initialized()
         return self.trainer.test(self.model, dataloaders=self.datamodule.test_dataloader(), ckpt_path=ckpt_path)
 
-    def predict(self, ckpt_path: str = None) -> np.ndarray:
+    def predict(self, dataloader=None, ckpt_path: str = None) -> np.ndarray:
         self._check_is_initialized()
         predictions_batched: List[torch.Tensor] = self.trainer.predict(
             self.model,
-            dataloaders=self.datamodule.predict_dataloader(),
+            dataloaders=dataloader if dataloader else self.datamodule.predict_dataloader() ,
             ckpt_path=ckpt_path
         )
         return torch.vstack(predictions_batched).numpy()

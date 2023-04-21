@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchmetrics import MetricCollection
-from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
+from torchmetrics.classification import MulticlassF1Score
 
 from cellnet.tabnet.tab_network import TabNet
 
@@ -57,26 +57,26 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         metrics = MetricCollection({
             'f1_micro': MulticlassF1Score(num_classes=type_dim, average='micro'),
             'f1_macro': MulticlassF1Score(num_classes=type_dim, average='macro'),
-            'acc_micro': MulticlassAccuracy(num_classes=type_dim, average='micro'),
-            'acc_macro': MulticlassAccuracy(num_classes=type_dim, average='macro')
         })
         self.train_metrics = metrics.clone(prefix='train_')
         self.val_metrics = metrics.clone(prefix='val_')
         self.test_metrics = metrics.clone(prefix='test_')
 
         self.register_buffer('class_weights', torch.tensor(class_weights.astype('f4')))
-        self.child_lookup = nn.Embedding.from_pretrained(torch.tensor(child_matrix.astype('f8')), freeze=True)
-        self.get_hierarchy_corrected_targets = torch.vmap(self._get_hierarchy_corrected_target)
+        self.register_buffer('child_lookup', torch.tensor(child_matrix.astype('i8')))
 
     @abc.abstractmethod
-    def _step(self, batch, training=True) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def _step(self, batch, training=True) -> Tuple[torch.Tensor, torch.Tensor]:
         pass
 
-    def _get_hierarchy_corrected_target(self, logit, target):
-        pred_is_child_node_or_node = self.child_lookup(target) * F.one_hot(torch.argmax(logit), self.type_dim)
+    def hierarchy_correct(self, preds, targets) -> Tuple[torch.Tensor, torch.Tensor]:
+        pred_is_child_node_or_node = torch.sum(
+            self.child_lookup[targets, :] * F.one_hot(preds, self.type_dim), dim=1
+        ) > 0
 
-        return torch.where(
-            torch.gt(torch.sum(pred_is_child_node_or_node), 0.), torch.argmax(pred_is_child_node_or_node), target
+        return (
+            torch.where(pred_is_child_node_or_node, targets, preds),  # corrected preds
+            torch.where(pred_is_child_node_or_node, preds, targets)  # corrected targets
         )
 
     def on_after_batch_transfer(self, batch, dataloader_idx):
@@ -84,18 +84,19 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
             batch = batch[0]
             batch['cell_type'] = torch.squeeze(batch['cell_type'])
             batch['idx'] = torch.squeeze(batch['idx'])
-            # zero center data
-            batch['X'] = batch['X'] - self.feature_means
 
         return batch
 
-    def forward(self, batch):
-        return self.classifier(batch['X'])
+    def forward(self, x: torch.Tensor):
+        return self.classifier(x)
 
     def training_step(self, batch, batch_idx):
-        preds, targets_corrected, loss = self._step(batch, training=True)
-        self.log('train_loss', loss, on_epoch=True)
-        self.log_dict(self.train_metrics(preds, targets_corrected), on_epoch=True)
+        preds, loss = self._step(batch, training=True)
+        self.log('train_loss', loss)
+        f1_macro = self.train_metrics['f1_macro'](preds, batch['cell_type'])
+        f1_micro = self.train_metrics['f1_micro'](preds, batch['cell_type'])
+        self.log('train_f1_macro_step', f1_macro)
+        self.log('train_f1_micro_step', f1_micro)
 
         if batch_idx % self.gc_freq == 0:
             gc.collect()
@@ -103,27 +104,42 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        preds, targets_corrected, loss = self._step(batch, training=False)
+        preds, loss = self._step(batch, training=False)
         self.log('val_loss', loss)
-        metrics = self.val_metrics(preds, targets_corrected)
-        self.log_dict(metrics)
-        self.log('hp_metric', metrics['val_f1_macro'])
-
+        self.val_metrics['f1_macro'].update(preds, batch['cell_type'])
+        self.val_metrics['f1_micro'].update(preds, batch['cell_type'])
         if batch_idx % self.gc_freq == 0:
             gc.collect()
 
     def test_step(self, batch, batch_idx):
-        preds, targets_corrected, loss = self._step(batch, training=False)
+        preds, loss = self._step(batch, training=False)
         self.log('test_loss', loss)
-        self.log_dict(self.test_metrics(preds, targets_corrected))
-
+        self.test_metrics['f1_macro'].update(preds, batch['cell_type'])
+        self.test_metrics['f1_micro'].update(preds, batch['cell_type'])
         if batch_idx % self.gc_freq == 0:
             gc.collect()
 
     def on_train_epoch_end(self) -> None:
+        self.log('train_f1_macro_epoch', self.train_metrics['f1_macro'].compute())
+        self.train_metrics['f1_macro'].reset()
+        self.log('train_f1_micro_epoch', self.train_metrics['f1_micro'].compute())
+        self.train_metrics['f1_micro'].reset()
         gc.collect()
 
     def on_validation_epoch_end(self) -> None:
+        f1_macro = self.val_metrics['f1_macro'].compute()
+        self.log('val_f1_macro', f1_macro)
+        self.log('hp_metric', f1_macro)
+        self.val_metrics['f1_macro'].reset()
+        self.log('val_f1_micro', self.val_metrics['f1_micro'].compute())
+        self.val_metrics['f1_micro'].reset()
+        gc.collect()
+
+    def on_test_epoch_end(self) -> None:
+        self.log('test_f1_macro', self.test_metrics['f1_macro'].compute())
+        self.test_metrics['f1_macro'].reset()
+        self.log('test_f1_micro', self.test_metrics['f1_micro'].compute())
+        self.test_metrics['f1_micro'].reset()
         gc.collect()
 
     def configure_optimizers(self):
@@ -185,7 +201,8 @@ class LinearClassifier(BaseClassifier):
         self.classifier = nn.Linear(gene_dim, type_dim)
 
     def _step(self, batch, training=True):
-        logits = self(batch)
+        x = batch['X'] - self.feature_means
+        logits = self(x)
         targets = batch['cell_type']
         preds = torch.argmax(logits, dim=1)
         if training:
@@ -193,10 +210,11 @@ class LinearClassifier(BaseClassifier):
         else:
             loss = F.cross_entropy(logits, targets)
 
-        return preds, targets, loss
+        return preds, loss
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        return F.softmax(self(batch), dim=1)
+        x = batch['X'] - self.feature_means
+        return F.softmax(self(x), dim=1)
 
 
 class TabnetClassifier(BaseClassifier):
@@ -210,6 +228,7 @@ class TabnetClassifier(BaseClassifier):
         class_weights: np.ndarray,
         child_matrix: np.ndarray,
         sample_labels: np.ndarray,
+        augmentations: np.ndarray,
         # params from datamodule
         train_set_size: int,
         val_set_size: int,
@@ -221,19 +240,20 @@ class TabnetClassifier(BaseClassifier):
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
         # tabnet params
-        lambda_sparse: float = 1e-6,
+        lambda_sparse: float = 1e-5,
         n_d: int = 256,
         n_a: int = 128,
-        n_steps: int = 5,
+        n_steps: int = 3,
         gamma: float = 1.3,
-        n_independent: int = 4,
-        n_shared: int = 4,
+        n_independent: int = 3,
+        n_shared: int = 3,
         epsilon: float = 1e-15,
-        virtual_batch_size: int = 128,
+        virtual_batch_size: int = 256,
         momentum: float = 0.02,
         mask_type: str = 'entmax',
-        correct_targets: bool = True,
-        min_class_freq: float = 100.
+        augment_training_data: bool = True,
+        correct_targets: bool = False,
+        min_class_freq: int = 100
     ):
         super(TabnetClassifier, self).__init__(
             gene_dim=gene_dim,
@@ -250,7 +270,8 @@ class TabnetClassifier(BaseClassifier):
             lr_scheduler=lr_scheduler,
             lr_scheduler_kwargs=lr_scheduler_kwargs
         )
-        self.save_hyperparameters(ignore=['feature_means', 'class_weights', 'child_matrix', 'sample_labels'])
+        self.save_hyperparameters(
+            ignore=['feature_means', 'class_weights', 'child_matrix', 'sample_labels', 'augmentations'])
 
         self.lambda_sparse = lambda_sparse
         classifier = TabNet(
@@ -267,48 +288,75 @@ class TabnetClassifier(BaseClassifier):
             momentum=momentum,
             mask_type=mask_type,
         )
-        self.classifier = torch.compile(classifier)
+        try:
+            self.classifier = torch.compile(classifier)
+        except AttributeError:
+            self.classifier = classifier
+
+        self.augment_training_data = augment_training_data
+        if self.augment_training_data:
+            self.register_buffer('augmentations', torch.tensor(augmentations.astype('f4')))
+
         self.correct_targets = correct_targets
         if self.correct_targets:
             self.register_buffer('sample_labels', torch.tensor(sample_labels))
-            self.min_class_freq = min_class_freq
+            self.min_class_freq = int(min_class_freq)
+
         self.predict_bottleneck = False
 
     def _step(self, batch, training=True):
-        logits, m_loss = self(batch)
+        if self.augment_training_data & training:
+            x = self._augment_data(batch['X']) - self.feature_means
+        else:
+            x = batch['X'] - self.feature_means
+        logits, m_loss = self(x)
 
         with torch.no_grad():
-            targets_corrected = self.get_hierarchy_corrected_targets(logits, batch['cell_type'])
             preds = torch.argmax(logits, dim=1)
+            preds_corrected, targets_corrected = self.hierarchy_correct(preds, batch['cell_type'])
+            if self.correct_targets:
+                # recalculate class weights with updated labels
+                with torch.no_grad():
+                    self.sample_labels[batch['idx']] = targets_corrected
+                    labels, counts = torch.unique(self.sample_labels, return_counts=True)
+                    # use minimum count of self.min_class_freq
+                    label_counts = self.min_class_freq * torch.ones(
+                        self.type_dim, dtype=torch.int64, device=labels.device)
+                    label_counts[labels] = counts
+                    weight = label_counts.sum() / (self.type_dim * label_counts)
+            else:
+                weight = self.class_weights
 
         if training:
             if self.correct_targets:
-                self.sample_labels[batch['idx']] = targets_corrected
-                labels, counts = torch.unique(self.sample_labels, return_counts=True)
-                label_counts = torch.zeros(self.type_dim, dtype=int, device=labels.device)
-                label_counts[labels] = counts
-                label_counts = torch.clamp(label_counts, min=int(self.min_class_freq))
-                weight = label_counts.sum() / (self.type_dim * label_counts)
                 loss = F.cross_entropy(logits, targets_corrected, weight=weight) - self.lambda_sparse * m_loss
             else:
-                weight = self.class_weights
                 loss = F.cross_entropy(logits, batch['cell_type'], weight=weight) - self.lambda_sparse * m_loss
         else:
             loss = F.cross_entropy(logits, targets_corrected)
 
-        return preds, targets_corrected, loss
+        return preds_corrected, loss
 
-    def predict_embedding(self, batch):
-        steps_output, _ = self.classifier.encoder(batch['X'])
+    def _augment_data(self, x: torch.Tensor):
+        augmentations = self.augmentations[
+            torch.randint(0, self.augmentations.shape[0], (x.shape[0], ), device=x.device), :
+        ]
+        sign = 2. * (torch.bernoulli(.5 * torch.ones(x.shape[0], 1, device=x.device)) - .5)
+
+        return torch.clamp(x + (sign * augmentations), min=0., max=1.)
+
+    def predict_embedding(self, x: torch.Tensor):
+        steps_output, _ = self.classifier.encoder(x)
         res = torch.sum(torch.stack(steps_output, dim=0), dim=0)
 
         return res
 
-    def predict_cell_types(self, batch):
-        return F.softmax(self(batch)[0], dim=1)
+    def predict_cell_types(self, x: torch.Tensor):
+        return F.softmax(self(x)[0], dim=1)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        x = batch['X'] - self.feature_means
         if self.predict_bottleneck:
-            return self.predict_embedding(batch)
+            return self.predict_embedding(x)
         else:
-            return self.predict_cell_types(batch)
+            return self.predict_cell_types(x)
