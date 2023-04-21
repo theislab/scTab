@@ -19,9 +19,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
 
-    parser.add_argument('--batch_size', default=4096, type=int)
+    parser.add_argument('--batch_size', default=2048, type=int)
     parser.add_argument('--lr', default=0.005, type=float)
-    parser.add_argument('--weight_decay', default=0.1, type=float)
+    parser.add_argument('--weight_decay', default=0.01, type=float)
     parser.add_argument('--lr_scheduler_step_size', default=2, type=int)
     parser.add_argument('--lr_scheduler_gamma', default=0.9, type=float)
     parser.add_argument('--version', default=None, type=str)
