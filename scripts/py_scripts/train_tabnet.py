@@ -6,7 +6,7 @@ import torch
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor, TQDMProgressBar
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.model_summary import ModelSummary
-from lightning_fabric.utilities.seed import seed_everything
+from lightning.pytorch import seed_everything
 
 from cellnet.estimators import EstimatorCellTypeClassifier
 from utils import get_paths, get_model_checkpoint
@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument('--n_shared', default=3, type=int)
     parser.add_argument('--virtual_batch_size', default=256, type=int)
     parser.add_argument('--mask_type', default='entmax', type=str)
+    parser.add_argument('--augment_training_data', default=True, type=lambda x: x.lower() in ['true', '1', '1.'])
     parser.add_argument('--correct_targets', default=True, type=lambda x: x.lower() in ['true', '1', '1.'])
     parser.add_argument('--lr_scheduler_step_size', default=2, type=int)
     parser.add_argument('--lr_scheduler_gamma', default=0.9, type=float)
@@ -103,6 +104,7 @@ if __name__ == '__main__':
             'n_shared': args.n_shared,
             'virtual_batch_size': args.virtual_batch_size,
             'mask_type': args.mask_type,
+            'augment_training_data': args.augment_training_data,
             'correct_targets': args.correct_targets
         },
     )

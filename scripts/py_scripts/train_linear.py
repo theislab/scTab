@@ -6,7 +6,7 @@ import torch
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor, TQDMProgressBar
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.utilities.model_summary import ModelSummary
-from lightning_fabric.utilities.seed import seed_everything
+from lightning.pytorch import seed_everything
 
 from cellnet.estimators import EstimatorCellTypeClassifier
 from utils import get_paths, get_model_checkpoint
