@@ -41,9 +41,9 @@ class EstimatorCellTypeClassifier:
 
     def init_model(self, model_type: str, model_kwargs):
         if model_type == 'tabnet':
-            self.model = TabnetClassifier(**{**self.get_fixed_model_params(), **model_kwargs})
+            self.model = TabnetClassifier(**{**self.get_fixed_model_params(model_type), **model_kwargs})
         elif model_type == 'linear':
-            self.model = LinearClassifier(**{**self.get_fixed_model_params(), **model_kwargs})
+            self.model = LinearClassifier(**{**self.get_fixed_model_params(model_type), **model_kwargs})
         else:
             raise ValueError(f'model_type has to be in ["linear", "tabnet"]. You supplied: {model_type}')
 
@@ -58,18 +58,24 @@ class EstimatorCellTypeClassifier:
         if not self.trainer:
             raise RuntimeError('You need to call self.init_trainer before calling self.train')
 
-    def get_fixed_model_params(self):
-        return {
+    def get_fixed_model_params(self, model_type: str):
+        model_params = {
             'gene_dim': len(pd.read_parquet(join(self.data_path, 'var.parquet'))),
             'type_dim': len(pd.read_parquet(join(self.data_path, 'categorical_lookup/cell_type.parquet'))),
             'feature_means': np.load(join(self.data_path, 'norm/zero_centering/means.npy')),
             'class_weights': np.load(join(self.data_path, 'class_weights.npy')),
             'child_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/child_matrix.npy')),
-            'sample_labels': dd.read_parquet(join(self.data_path, 'train'), columns='cell_type').compute().to_numpy(),
             'train_set_size': sum(self.datamodule.train_dataset.partition_lens),
             'val_set_size': sum(self.datamodule.val_dataset.partition_lens),
             'batch_size': self.datamodule.batch_size,
         }
+        if model_type == 'tabnet':
+            model_params['sample_labels'] = (
+                dd.read_parquet(join(self.data_path, 'train'), columns='cell_type').compute().to_numpy()
+            )
+            model_params['augmentations'] = np.load(join(self.data_path, 'augmentations.npy'))
+
+        return model_params
 
     def find_lr(self, lr_find_kwargs, plot_results: bool = False):
         self._check_is_initialized()
@@ -102,11 +108,11 @@ class EstimatorCellTypeClassifier:
         self._check_is_initialized()
         return self.trainer.test(self.model, dataloaders=self.datamodule.test_dataloader(), ckpt_path=ckpt_path)
 
-    def predict(self, ckpt_path: str = None) -> np.ndarray:
+    def predict(self, dataloader=None, ckpt_path: str = None) -> np.ndarray:
         self._check_is_initialized()
         predictions_batched: List[torch.Tensor] = self.trainer.predict(
             self.model,
-            dataloaders=self.datamodule.predict_dataloader(),
+            dataloaders=dataloader if dataloader else self.datamodule.predict_dataloader() ,
             ckpt_path=ckpt_path
         )
         return torch.vstack(predictions_batched).numpy()

@@ -22,19 +22,19 @@ ml Python/3.10.4
 source merlin-torch/bin/activate
 cd git/cellnet/scripts || exit
 
-srun -n 1 --exclusive --output=slurm_out/out_gpu0.%j --error=slurm_out/err_gpu0.%j --cpu-bind=verbose,socket --gres=gpu:1 \
+srun -n 1 --cpus-per-task=12 --exclusive --output=slurm_out/out_gpu0.%j --error=slurm_out/err_gpu0.%j --cpu-bind=verbose,socket --gres=gpu:1 \
      python -u py_scripts/train_tabnet.py \
      --cluster="jsc" \
      --version='version_1' &
-srun -n 1 --exclusive --output=slurm_out/out_gpu1.%j --error=slurm_out/err_gpu1.%j --cpu-bind=verbose,socket --gres=gpu:1 \
+srun -n 1 --cpus-per-task=12 --exclusive --output=slurm_out/out_gpu1.%j --error=slurm_out/err_gpu1.%j --cpu-bind=verbose,socket --gres=gpu:1 \
      python -u py_scripts/train_tabnet.py \
      --cluster="jsc" \
      --version='version_2' &
-srun -n 1 --exclusive --output=slurm_out/out_gpu2.%j --error=slurm_out/err_gpu2.%j --cpu-bind=verbose,socket --gres=gpu:1 \
+srun -n 1 --cpus-per-task=12 --exclusive --output=slurm_out/out_gpu2.%j --error=slurm_out/err_gpu2.%j --cpu-bind=verbose,socket --gres=gpu:1 \
      python -u py_scripts/train_tabnet.py \
      --cluster="jsc" \
      --version='version_3' &
-srun -n 1 --exclusive --output=slurm_out/out_gpu3.%j --error=slurm_out/err_gpu3.%j --cpu-bind=verbose,socket --gres=gpu:1 \
+srun -n 1 --cpus-per-task=12 --exclusive --output=slurm_out/out_gpu3.%j --error=slurm_out/err_gpu3.%j --cpu-bind=verbose,socket --gres=gpu:1 \
      python -u py_scripts/train_tabnet.py \
      --cluster="jsc" \
      --version='version_4' &
