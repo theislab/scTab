@@ -75,7 +75,7 @@ class CustomDataset(Dataset):
         if isinstance(x, csr_matrix):
             x = x.toarray()
 
-        if self.obs:
+        if self.obs is not None:
             # replicate merlin dataloader output format
             out = (
                 {
