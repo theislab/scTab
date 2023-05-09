@@ -79,7 +79,7 @@ def _get_data_files(base_path: str, split: str, sub_sample_frac: float):
         return join(base_path, split)
     else:
         files = [file for file in os.listdir(join(base_path, split)) if file.endswith('.parquet')]
-        files = sorted(files, key=lambda x: int(x.split('.')[1]))
+        files = [join(base_path, split, file) for file in sorted(files, key=lambda x: int(x.split('.')[1]))]
         return files[:ceil(sub_sample_frac * len(files))]
 
 
