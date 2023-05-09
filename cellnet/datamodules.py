@@ -1,12 +1,14 @@
+import os
+from math import ceil
 from os.path import join
 from typing import Dict, List
 
+import lightning.pytorch as pl
 import merlin.io
 import pyarrow as pa
-import lightning.pytorch as pl
 from merlin.dataloader.torch import Loader
-from merlin.schema import ColumnSchema, Schema
 from merlin.dtypes import float32, int64
+from merlin.schema import ColumnSchema, Schema
 
 
 PARQUET_SCHEMA = pa.schema([
@@ -71,6 +73,16 @@ def _set_default_kwargs_dataset(kwargs: Dict[str, any], train: bool = True):
     return kwargs
 
 
+def _get_data_files(base_path: str, split: str, sub_sample_frac: float):
+    if sub_sample_frac == 1.:
+        # if no subsampling -> just return base path and merlin takes care of the rest
+        return join(base_path, split)
+    else:
+        files = [file for file in os.listdir(join(base_path, split)) if file.endswith('.parquet')]
+        files = sorted(files, key=lambda x: int(x.split('.')[1]))
+        return files[:ceil(sub_sample_frac * len(files))]
+
+
 class MerlinDataModule(pl.LightningDataModule):
 
     def __init__(
@@ -78,6 +90,7 @@ class MerlinDataModule(pl.LightningDataModule):
             path: str,
             columns: List[str],
             batch_size: int,
+            sub_sample_frac: float = 1.,
             dataloader_kwargs_train: Dict = None,
             dataloader_kwargs_inference: Dict = None,
             dataset_kwargs_train: Dict = None,
@@ -92,9 +105,15 @@ class MerlinDataModule(pl.LightningDataModule):
         self.dataloader_kwargs_inference = _set_default_kwargs_dataloader(dataloader_kwargs_inference, train=False)
 
         self.train_dataset = _merlin_dataset_factory(
-            join(path, 'train'), columns, _set_default_kwargs_dataset(dataset_kwargs_train, train=True))
+            _get_data_files(path, 'train', sub_sample_frac),
+            columns,
+            _set_default_kwargs_dataset(dataset_kwargs_train, train=True)
+        )
         self.val_dataset = _merlin_dataset_factory(
-            join(path, 'val'), columns, _set_default_kwargs_dataset(dataset_kwargs_inference, train=False))
+            _get_data_files(path, 'val', sub_sample_frac),
+            columns,
+            _set_default_kwargs_dataset(dataset_kwargs_inference, train=False)
+        )
         self.test_dataset = _merlin_dataset_factory(
             join(path, 'test'), columns, _set_default_kwargs_dataset(dataset_kwargs_inference, train=False))
 

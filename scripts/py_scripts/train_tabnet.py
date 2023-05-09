@@ -20,6 +20,7 @@ def parse_args():
     parser.add_argument('--cluster', type=str)
 
     parser.add_argument('--batch_size', default=2048, type=int)
+    parser.add_argument('--sub_sample_frac', default=1., type=float)
     parser.add_argument('--lr', default=0.005, type=float)
     parser.add_argument('--weight_decay', default=0.1, type=float)
     parser.add_argument('--lambda_sparse', default=1e-5, type=float)
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
     estim = EstimatorCellTypeClassifier(DATA_PATH)
     seed_everything(args.seed)
-    estim.init_datamodule(batch_size=args.batch_size)
+    estim.init_datamodule(batch_size=args.batch_size, sub_sample_frac=args.sub_sample_frac)
     estim.init_trainer(
         trainer_kwargs={
             'max_epochs': 1000,
