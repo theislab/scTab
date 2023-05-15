@@ -23,7 +23,8 @@ class EstimatorCellTypeClassifier:
 
     def init_datamodule(
             self,
-            batch_size: int = 4096,
+            batch_size: int = 2048,
+            sub_sample_frac: float = 1.,
             dataloader_kwargs_train: Dict = None,
             dataloader_kwargs_inference: Dict = None,
             merlin_dataset_kwargs_train: Dict = None,
@@ -33,6 +34,7 @@ class EstimatorCellTypeClassifier:
             self.data_path,
             columns=['idx', 'cell_type'],
             batch_size=batch_size,
+            sub_sample_frac=sub_sample_frac,
             dataloader_kwargs_train=dataloader_kwargs_train,
             dataloader_kwargs_inference=dataloader_kwargs_inference,
             dataset_kwargs_train=merlin_dataset_kwargs_train,
