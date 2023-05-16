@@ -15,7 +15,7 @@ from cellnet.tabnet.tab_network import TabNet
 
 class BaseClassifier(pl.LightningModule, abc.ABC):
 
-    classifier: Callable  # classifier mapping von gene_dim to type_dim - outputs logits
+    classifier: nn.Module  # classifier mapping von gene_dim to type_dim - outputs logits
 
     def __init__(
         self,
@@ -288,10 +288,7 @@ class TabnetClassifier(BaseClassifier):
             momentum=momentum,
             mask_type=mask_type,
         )
-        try:
-            self.classifier = torch.compile(classifier)
-        except AttributeError:
-            self.classifier = classifier
+        self.classifier = classifier
 
         self.augment_training_data = augment_training_data
         if self.augment_training_data:

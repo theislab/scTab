@@ -6,13 +6,13 @@ def get_paths(cluster: str, model: str):
         return (
             os.path.join('/p/scratch/hai_cellnet/tb_logs/', model),
             os.path.join('/p/scratch/hai_cellnet/tb_logs', model),
-            '/p/scratch/hai_cellnet/merlin_cxg_simple_norm_parquet'
+            '/p/scratch/hai_cellnet/merlin_cxg_norm_parquet'
         )
     elif cluster == 'icb':
         return (
             os.path.join('/lustre/scratch/users/felix.fischer/tb_logs', model),
             os.path.join('/lustre/scratch/users/felix.fischer/tb_logs', model),
-            '/lustre/scratch/users/felix.fischer/merlin_cxg_simple_norm_parquet'
+            '/lustre/scratch/users/felix.fischer/merlin_cxg_norm_parquet'
         )
     else:
         raise ValueError(f'Only "jsc" or "icb" are supported as cluster. You supplied: {cluster}')
