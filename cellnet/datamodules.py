@@ -28,7 +28,7 @@ PARQUET_SCHEMA = {
 }
 
 
-def _merlin_dataset_factory(path: str, columns: List[str], dataset_kwargs: Dict[str, any]):
+def merlin_dataset_factory(path: str, columns: List[str], dataset_kwargs: Dict[str, any]):
     return merlin.io.Dataset(
         path,
         engine='parquet',
@@ -46,7 +46,7 @@ def _merlin_dataset_factory(path: str, columns: List[str], dataset_kwargs: Dict[
     )
 
 
-def _set_default_kwargs_dataloader(kwargs: Dict[str, any], training: bool = True):
+def set_default_kwargs_dataloader(kwargs: Dict[str, any] = None, training: bool = True):
     assert isinstance(training, bool)
     if kwargs is None:
         kwargs = {}
@@ -60,7 +60,7 @@ def _set_default_kwargs_dataloader(kwargs: Dict[str, any], training: bool = True
     return kwargs
 
 
-def _set_default_kwargs_dataset(kwargs: Dict[str, any] = None, training: bool = True):
+def set_default_kwargs_dataset(kwargs: Dict[str, any] = None, training: bool = True):
     if kwargs is None:
         kwargs = {}
     if all(['part_size' not in kwargs, 'part_mem_fraction' not in kwargs]):
@@ -96,21 +96,21 @@ class MerlinDataModule(pl.LightningDataModule):
         for col in columns:
             assert col in PARQUET_SCHEMA
 
-        self.dataloader_kwargs_train = _set_default_kwargs_dataloader(dataloader_kwargs_train, training=True)
-        self.dataloader_kwargs_inference = _set_default_kwargs_dataloader(dataloader_kwargs_inference, training=False)
+        self.dataloader_kwargs_train = set_default_kwargs_dataloader(dataloader_kwargs_train, training=True)
+        self.dataloader_kwargs_inference = set_default_kwargs_dataloader(dataloader_kwargs_inference, training=False)
 
-        self.train_dataset = _merlin_dataset_factory(
+        self.train_dataset = merlin_dataset_factory(
             _get_data_files(path, 'train', sub_sample_frac),
             columns,
-            _set_default_kwargs_dataset(dataset_kwargs_train, training=True)
+            set_default_kwargs_dataset(dataset_kwargs_train, training=True)
         )
-        self.val_dataset = _merlin_dataset_factory(
+        self.val_dataset = merlin_dataset_factory(
             _get_data_files(path, 'val', sub_sample_frac),
             columns,
-            _set_default_kwargs_dataset(dataset_kwargs_inference, training=False)
+            set_default_kwargs_dataset(dataset_kwargs_inference, training=False)
         )
-        self.test_dataset = _merlin_dataset_factory(
-            join(path, 'test'), columns, _set_default_kwargs_dataset(dataset_kwargs_inference, training=False))
+        self.test_dataset = merlin_dataset_factory(
+            join(path, 'test'), columns, set_default_kwargs_dataset(dataset_kwargs_inference, training=False))
 
         self.batch_size = batch_size
 
