@@ -23,12 +23,12 @@ def parse_args():
     parser.add_argument('--sub_sample_frac', default=1., type=float)
     parser.add_argument('--lr', default=0.005, type=float)
     parser.add_argument('--weight_decay', default=0.1, type=float)
-    parser.add_argument('--lambda_sparse', default=1e-6, type=float)
+    parser.add_argument('--lambda_sparse', default=1e-5, type=float)
     parser.add_argument('--n_d', default=128, type=int)
     parser.add_argument('--n_a', default=64, type=int)
     parser.add_argument('--n_steps', default=3, type=int)
     parser.add_argument('--gamma', default=1.3, type=float)
-    parser.add_argument('--n_independent', default=3, type=int)
+    parser.add_argument('--n_independent', default=5, type=int)
     parser.add_argument('--n_shared', default=3, type=int)
     parser.add_argument('--virtual_batch_size', default=256, type=int)
     parser.add_argument('--mask_type', default='entmax', type=str)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     print(args)
 
     # config parameters
-    MODEL = 'tabnet'
+    MODEL = 'tabnet_split_by_tech_sample'
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
 
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
