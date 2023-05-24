@@ -30,3 +30,22 @@
       * e.g. classifier predicts `T cell` instead of `CD4-positive, alpha-beta T cell`
     * Anything else
 * The code to find the child nodes based on the cell ontology (https://www.ebi.ac.uk/ols/ontologies/cl) can be found under `cellnet/utils/cell_ontology.py`
+
+
+# Evaluation results
+
+* The cell type classification evaluation notebooks for TabNet + reference models can be found here:
+  * TabNet: `notebooks/model_evaluation/classification-tabnet.ipynb`
+  * Linear reference model: `notebooks/model_evaluation/classification-linear.ipynb`
+  * XGBoost reference model: `notebooks/model_evalutation/classification-xgboost.ipynb`
+
+* The evaluation notebooks contain the following metrics:
+  * Overall classification performance measured by macro F1-score (shows overall performance of the classifier)
+  * Plot of per cell type F1-score (can be used to spot cell types where the model currently struggles with)
+  * TSNE visualization of predicted and true labels
+    * TSNE visualization is calculated based on the first 50 PCA components of the test set
+    * Additionally, binary indicator whether a prediction is `right` or `wrong` is overlaid on the TSNE plots
+
+* Evaluation notebooks for TabNet model:
+  * `notebooks/model_evaluation/model-scaling-tabnet.ipynb`: Classification performance vs training data size for TabNet model
+  * `notebooks/model_evaluation/classificationf-tabnet-ensembl.ipynb`: Deep ensemble of TabNet models + evaluation of uncertainty quantification of predictions

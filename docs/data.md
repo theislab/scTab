@@ -19,8 +19,8 @@
   4. There have to be at least `5000` cells for a specific cell type
   5. Each cell type has to be observed in at least `30` donors to reliably quantify whether the classifier can generalize to new donors.
   6. Each cell type needs to have at least `7` parent nodes according to the cell type ontology to filter out too granular / general cell type labels
-* Split into train, val and test set
-  * Split is based on donor:  
+* Split data into train, val and test set
+  * Splits are based on donors:  
     * E.g. each donor is either in the train, val or test set (Unlike for random subsampling)
     * A donor based split better represents how the classifier generalises to unseen donors / data sets
   * Split fraction: train=0.7, val=0.15, test=0.15
@@ -38,9 +38,20 @@
 # Data statistics
 * `157` cell types
 * `4771` unique donors
-* Data set sizes
+* Data set size: `21.178.368` cells
   * train: `14.564.352` cells
   * val: `3.402.752` cells
   * test: `3.211.264` cells
 * `19331` genes (protein coding genes)
 * `54` different tissues (`190` with more fine-grained annotation)
+
+
+# Data preparation pipeline
+
+* The data preparation pipeline can be found under `notebooks/store_creation`:
+  1. `01_create_train_val_test_splits.ipynb`: Subset and download data from CxG census. And split downloaded data into train, val and test set
+  2. `02_fit_quantile_norm.ipynb`: Preprocess data
+  3. `03_write_store_merlin.ipynb`: Save data into on-disk format that can be used my Nvidia Merlin dataloader (https://github.com/NVIDIA-Merlin/dataloader)
+  4. `04_create_hierarchy_matrices.ipynb`: Create child node lookup matrices to find subtypes based on cell type ontology
+  5. `05_compute_pca.ipynb`: Compute PCA embeddings for visualization (50 components) and model training (256 components)
+  6. `06_check_written_store.ipynb`: Sanity check written data
