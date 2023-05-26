@@ -23,6 +23,9 @@
   * Splits are based on donors:  
     * E.g. each donor is either in the train, val or test set (Unlike for random subsampling)
     * A donor based split better represents how the classifier generalises to unseen donors / data sets
+    * A donor based split roughly resembles a random split when looking at the overall proportion of cells in the train, val and test set.
+    If the number of donors is large enough this hold wells. On average 68% of the samples per cell type are in the train set in the current setting
+      (ideal would be 70% with a 70% - 15% - 15% split). The worst outlier cell type is that only 37% of the cells are in the training set. 
   * Split fraction: train=0.7, val=0.15, test=0.15
 
 
