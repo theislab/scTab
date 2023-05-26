@@ -17,15 +17,18 @@
        ```
   3. Annotated cell type has to be a subtype of `native cell`
   4. There have to be at least `5000` cells for a specific cell type
-  5. Each cell type has to be observed in at least `30` donors to reliably quantify whether the classifier can generalize to new donors.
-  6. Each cell type needs to have at least `7` parent nodes according to the cell type ontology to filter out too granular / general cell type labels
+  5. Each cell type has to be observed in at least `30` donors to reliably quantify whether the classifier can 
+  generalize to new donors.
+  6. Each cell type needs to have at least `7` parent nodes according to the cell type ontology to filter out too 
+  granular / general cell type labels
 * Split data into train, val and test set
   * Splits are based on donors:  
     * E.g. each donor is either in the train, val or test set (Unlike for random subsampling)
     * A donor based split better represents how the classifier generalises to unseen donors / data sets
-    * A donor based split roughly resembles a random split when looking at the overall proportion of cells in the train, val and test set.
-    If the number of donors is large enough this hold wells. On average 68% of the samples per cell type are in the train set in the current setting
-      (ideal would be 70% with a 70% - 15% - 15% split). The worst outlier cell type is that only 37% of the cells are in the training set. 
+    * A donor based split roughly resembles a random split when looking at the overall proportion of cells in the 
+    train, val and test set.cIf the number of donors is large enough this hold wells. On average 68% of the samples per 
+    cell type are in the train set in the current setting (ideal would be 70% with a 70% - 15% - 15% split). The worst 
+    outlier cell type is that only 37% of the cells are in the training set. 
   * Split fraction: train=0.7, val=0.15, test=0.15
 
 
@@ -52,9 +55,13 @@
 # Data preparation pipeline
 
 * The data preparation pipeline can be found under `notebooks/store_creation`:
-  1. `01_create_train_val_test_splits.ipynb`: Subset and download data from CxG census. And split downloaded data into train, val and test set
+  1. `01_create_train_val_test_splits.ipynb`: Subset and download data from CxG census. And split downloaded data into 
+  train, val and test set
   2. `02_fit_quantile_norm.ipynb`: Preprocess data
-  3. `03_write_store_merlin.ipynb`: Save data into on-disk format that can be used my Nvidia Merlin dataloader (https://github.com/NVIDIA-Merlin/dataloader)
-  4. `04_create_hierarchy_matrices.ipynb`: Create child node lookup matrices to find subtypes based on cell type ontology
-  5. `05_compute_pca.ipynb`: Compute PCA embeddings for visualization (50 components) and model training (256 components)
+  3. `03_write_store_merlin.ipynb`: Save data into on-disk format that can be used my Nvidia Merlin dataloader 
+  (https://github.com/NVIDIA-Merlin/dataloader)
+  4. `04_create_hierarchy_matrices.ipynb`: Create child node lookup matrices to find subtypes based on cell type 
+  ontology
+  5. `05_compute_pca.ipynb`: Compute PCA embeddings for visualization (50 components) and model training 
+  (256 components)
   6. `06_check_written_store.ipynb`: Sanity check written data
