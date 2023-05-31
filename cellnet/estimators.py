@@ -61,10 +61,16 @@ class EstimatorCellTypeClassifier:
             raise RuntimeError('You need to call self.init_trainer before calling self.train')
 
     def get_fixed_model_params(self, model_type: str):
+        gene_dim = len(pd.read_parquet(join(self.data_path, 'var.parquet')))
+        try:
+            feature_means = np.load(join(self.data_path, 'norm/zero_centering/means.npy'))
+        except FileNotFoundError:
+            feature_means = np.zeros(gene_dim)  # set means to zero if no zero center values are provided
+
         model_params = {
-            'gene_dim': len(pd.read_parquet(join(self.data_path, 'var.parquet'))),
+            'gene_dim': gene_dim,
             'type_dim': len(pd.read_parquet(join(self.data_path, 'categorical_lookup/cell_type.parquet'))),
-            'feature_means': np.load(join(self.data_path, 'norm/zero_centering/means.npy')),
+            'feature_means': feature_means,
             'class_weights': np.load(join(self.data_path, 'class_weights.npy')),
             'child_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/child_matrix.npy')),
             'train_set_size': sum(self.datamodule.train_dataset.partition_lens),
@@ -72,10 +78,14 @@ class EstimatorCellTypeClassifier:
             'batch_size': self.datamodule.batch_size,
         }
         if model_type == 'tabnet':
+            try:
+                augmentations = np.load(join(self.data_path, 'augmentations.npy'))
+            except FileNotFoundError:
+                augmentations = None
             model_params['sample_labels'] = (
                 dd.read_parquet(join(self.data_path, 'train'), columns='cell_type').compute().to_numpy()
             )
-            model_params['augmentations'] = np.load(join(self.data_path, 'augmentations.npy'))
+            model_params['augmentations'] = augmentations
 
         return model_params
 

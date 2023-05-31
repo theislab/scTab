@@ -13,6 +13,15 @@ from torchmetrics.classification import MulticlassF1Score
 from cellnet.tabnet.tab_network import TabNet
 
 
+def _sf_log1p_norm(x):
+    # norm to 10000 counts per cell and log1p transform
+    counts = torch.sum(x, dim=1, keepdim=True)
+    # avoid zero devision error
+    counts += counts == 0.
+    scaling_factor = 10000. / counts
+    return torch.log1p(scaling_factor * x)
+
+
 class BaseClassifier(pl.LightningModule, abc.ABC):
 
     classifier: nn.Module  # classifier mapping von gene_dim to type_dim - outputs logits
@@ -35,8 +44,10 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
-        gc_frequency: int = 5
+        gc_frequency: int = 5,
+        normalize_inputs=False
     ):
+        assert isinstance(normalize_inputs, bool)
         super(BaseClassifier, self).__init__()
 
         self.gene_dim = gene_dim
@@ -45,6 +56,7 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         self.val_set_size = val_set_size
         self.batch_size = batch_size
         self.gc_freq = gc_frequency
+        self.normalize_inputs = normalize_inputs
 
         self.lr = learning_rate
         self.weight_decay = weight_decay
@@ -84,6 +96,8 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
             batch = batch[0]
             batch['cell_type'] = torch.squeeze(batch['cell_type'])
             batch['idx'] = torch.squeeze(batch['idx'])
+            if self.normalize_inputs:
+                batch['X'] = _sf_log1p_norm(batch['X'])
 
         return batch
 
@@ -180,6 +194,7 @@ class LinearClassifier(BaseClassifier):
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
+        normalize_inputs=False
     ):
         super(LinearClassifier, self).__init__(
             gene_dim=gene_dim,
@@ -194,7 +209,8 @@ class LinearClassifier(BaseClassifier):
             weight_decay=weight_decay,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
-            lr_scheduler_kwargs=lr_scheduler_kwargs
+            lr_scheduler_kwargs=lr_scheduler_kwargs,
+            normalize_inputs=normalize_inputs
         )
         self.save_hyperparameters(ignore=['feature_means', 'class_weights', 'parent_matrix', 'child_matrix'])
 
@@ -239,6 +255,7 @@ class TabnetClassifier(BaseClassifier):
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
+        normalize_inputs: bool = False,
         # tabnet params
         lambda_sparse: float = 1e-5,
         n_d: int = 256,
@@ -255,6 +272,9 @@ class TabnetClassifier(BaseClassifier):
         correct_targets: bool = False,
         min_class_freq: int = 100
     ):
+        if augmentations is None and augment_training_data:
+            raise ValueError('No augmentations provided and augment_training_data set to "True"')
+
         super(TabnetClassifier, self).__init__(
             gene_dim=gene_dim,
             type_dim=type_dim,
@@ -268,7 +288,8 @@ class TabnetClassifier(BaseClassifier):
             weight_decay=weight_decay,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
-            lr_scheduler_kwargs=lr_scheduler_kwargs
+            lr_scheduler_kwargs=lr_scheduler_kwargs,
+            normalize_inputs=normalize_inputs
         )
         self.save_hyperparameters(
             ignore=['feature_means', 'class_weights', 'child_matrix', 'sample_labels', 'augmentations'])
