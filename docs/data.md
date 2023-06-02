@@ -1,4 +1,8 @@
-# Data set curation
+# Data set creation
+**Author:** Felix Fischer (GitHub @felix0097) \
+**Date:** 31.05.2023
+
+## Data set curation
 * Based on Cell-by-Gene (CxG) census version `2023-05-08`
 * Gene space subset to `19331` protein coding genes (see `notebooks/store_creation/features.parquet` for full list)
 * Cells are subset with following criterion
@@ -32,7 +36,7 @@
   * Split fraction: train=0.7, val=0.15, test=0.15
 
 
-# Data preprocessing
+## Data preprocessing
 * Preprocessing includes the following steps:
   1. Normalize each cell to have `10000` counts
   2. Quantile transformation
@@ -41,7 +45,7 @@
   3. Zero-centering: Normalize each column to have zero mean
 
 
-# Data statistics
+## Data statistics
 * `157` cell types
 * `4771` unique donors
 * Data set size: `21.178.368` cells
@@ -52,7 +56,7 @@
 * `54` different tissues (`190` with more fine-grained annotation)
 
 
-# Data preparation pipeline
+## Data preparation pipeline
 
 * The data preparation pipeline can be found under `notebooks/store_creation`:
   1. `01_create_train_val_test_splits.ipynb`: Subset and download data from CxG census. And split downloaded data into 

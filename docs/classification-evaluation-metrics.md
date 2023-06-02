@@ -1,17 +1,22 @@
-# Evaluation metrics
+# Model Evaluation
+**Author:** Felix Fischer (GitHub @felix0097) \
+**Date:** 31.05.2023
+
+
+## Evaluation metrics
 
 * F1-score: https://en.wikipedia.org/wiki/F-score
-* macro F1-score
+* Macro F1-score (macro average F1-score)
   * Macro average == calculate F1-score per cell type and take the average of the per cell type F1-scores
   * Macro average better reflects performance across all cell types as there is a strong class imbalance in the data set
-  * macro F1-score is often taken as the default metric to evaluate cell type classification performance
-* weighted F1-score
+  * The macro F1-score is often taken as the default metric to evaluate cell type classification performance
+* Weighted F1-score (weighted average F1-score)
   * Weighted average == calculate F1-score per cell type and take the weighted average of the per cell type F1-scores
   (classes with more samples get a higher weight)
   * Weighted average better reflects how many of the cells are classified correctly
 
 
-# Evaluation data
+## Evaluation data
 
 * Evaluation covers the same cell types as seen during model training
 * Evaluation data consists of donors the model has not seen during training 
@@ -19,7 +24,7 @@
   * This better represents how well the classifier generalises to unseen donors than just random subsampling of cells
 
 
-# Dealing with different cell type annotation granularity
+## Dealing with different cell type annotation granularity
 
 * Different data sets are often annotated with vastly different granularity e.g. `T cell` vs 
 `CD4-positive, alpha-beta T cell`
@@ -39,7 +44,7 @@
 found under `cellnet/utils/cell_ontology.py`
 
 
-# Evaluation results
+## Evaluation results
 
 * The cell type classification evaluation notebooks for TabNet + reference models can be found here:
   * TabNet: `notebooks/model_evaluation/classification-tabnet.ipynb`

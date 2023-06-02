@@ -1,4 +1,6 @@
-# Overview models
+# Model overview
+**Author:** Felix Fischer (GitHub @felix0097) \
+**Date:** 31.05.2023
 
 ## TabNet model
 * Based on https://arxiv.org/abs/1908.07442
