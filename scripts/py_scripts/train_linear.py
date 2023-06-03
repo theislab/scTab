@@ -39,7 +39,7 @@ if __name__ == '__main__':
     print(args)
 
     # config parameters
-    MODEL = 'linear_split_by_tech_sample'
+    MODEL = 'cxg_2023_05_15_linear'
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
 
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
