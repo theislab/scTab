@@ -22,7 +22,6 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         # fixed params
         gene_dim: int,
         type_dim: int,
-        feature_means: np.ndarray,
         class_weights: np.ndarray,
         child_matrix: np.ndarray,
         # params from datamodule
@@ -31,11 +30,11 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         batch_size: int,
         # model specific params
         learning_rate: float = 0.005,
-        weight_decay: float = 0.1,
+        weight_decay: float = 0.05,
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
-        gc_frequency: int = 5
+        gc_frequency: int = 10
     ):
         super(BaseClassifier, self).__init__()
 
@@ -51,8 +50,6 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         self.optim = optimizer
         self.lr_scheduler = lr_scheduler
         self.lr_scheduler_kwargs = lr_scheduler_kwargs
-
-        self.register_buffer('feature_means', torch.tensor(feature_means.astype('f4')))
 
         metrics = MetricCollection({
             'f1_micro': MulticlassF1Score(num_classes=type_dim, average='micro'),
@@ -167,7 +164,6 @@ class LinearClassifier(BaseClassifier):
         # fixed params
         gene_dim: int,
         type_dim: int,
-        feature_means: np.ndarray,
         class_weights: np.ndarray,
         child_matrix: np.ndarray,
         # params from datamodule
@@ -184,7 +180,6 @@ class LinearClassifier(BaseClassifier):
         super(LinearClassifier, self).__init__(
             gene_dim=gene_dim,
             type_dim=type_dim,
-            feature_means=feature_means,
             class_weights=class_weights,
             child_matrix=child_matrix,
             train_set_size=train_set_size,
@@ -196,12 +191,12 @@ class LinearClassifier(BaseClassifier):
             lr_scheduler=lr_scheduler,
             lr_scheduler_kwargs=lr_scheduler_kwargs
         )
-        self.save_hyperparameters(ignore=['feature_means', 'class_weights', 'parent_matrix', 'child_matrix'])
+        self.save_hyperparameters(ignore=['class_weights', 'parent_matrix', 'child_matrix'])
 
         self.classifier = nn.Linear(gene_dim, type_dim)
 
     def _step(self, batch, training=True):
-        x = batch['X'] - self.feature_means
+        x = batch['X']
         logits = self(x)
         targets = batch['cell_type']
         preds = torch.argmax(logits, dim=1)
@@ -213,7 +208,7 @@ class LinearClassifier(BaseClassifier):
         return preds, loss
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        x = batch['X'] - self.feature_means
+        x = batch['X']
         return F.softmax(self(x), dim=1)
 
 
@@ -224,7 +219,6 @@ class TabnetClassifier(BaseClassifier):
         # fixed params
         gene_dim: int,
         type_dim: int,
-        feature_means: np.ndarray,
         class_weights: np.ndarray,
         child_matrix: np.ndarray,
         sample_labels: np.ndarray,
@@ -258,7 +252,6 @@ class TabnetClassifier(BaseClassifier):
         super(TabnetClassifier, self).__init__(
             gene_dim=gene_dim,
             type_dim=type_dim,
-            feature_means=feature_means,
             class_weights=class_weights,
             child_matrix=child_matrix,
             train_set_size=train_set_size,
@@ -271,7 +264,7 @@ class TabnetClassifier(BaseClassifier):
             lr_scheduler_kwargs=lr_scheduler_kwargs
         )
         self.save_hyperparameters(
-            ignore=['feature_means', 'class_weights', 'child_matrix', 'sample_labels', 'augmentations'])
+            ignore=['class_weights', 'child_matrix', 'sample_labels', 'augmentations'])
 
         self.lambda_sparse = lambda_sparse
         classifier = TabNet(
@@ -303,9 +296,9 @@ class TabnetClassifier(BaseClassifier):
 
     def _step(self, batch, training=True):
         if self.augment_training_data & training:
-            x = self._augment_data(batch['X']) - self.feature_means
+            x = self._augment_data(batch['X'])
         else:
-            x = batch['X'] - self.feature_means
+            x = batch['X']
         logits, m_loss = self(x)
 
         with torch.no_grad():
@@ -340,7 +333,7 @@ class TabnetClassifier(BaseClassifier):
         ]
         sign = 2. * (torch.bernoulli(.5 * torch.ones(x.shape[0], 1, device=x.device)) - .5)
 
-        return torch.clamp(x + (sign * augmentations), min=0., max=1.)
+        return torch.clamp(x + (sign * augmentations), min=0., max=9.)
 
     def predict_embedding(self, x: torch.Tensor):
         steps_output, _ = self.classifier.encoder(x)
@@ -352,8 +345,7 @@ class TabnetClassifier(BaseClassifier):
         return F.softmax(self(x)[0], dim=1)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        x = batch['X'] - self.feature_means
         if self.predict_bottleneck:
-            return self.predict_embedding(x)
+            return self.predict_embedding(batch['X'])
         else:
-            return self.predict_cell_types(x)
+            return self.predict_cell_types(batch['X'])

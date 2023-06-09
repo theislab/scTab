@@ -19,8 +19,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
 
+    parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--batch_size', default=2048, type=int)
-    parser.add_argument('--lr', default=0.001, type=float)
+    parser.add_argument('--lr', default=0.0005, type=float)
     parser.add_argument('--weight_decay', default=0.01, type=float)
     parser.add_argument('--lr_scheduler_step_size', default=1, type=int)
     parser.add_argument('--lr_scheduler_gamma', default=0.9, type=float)
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     estim.init_datamodule(batch_size=args.batch_size)
     estim.init_trainer(
         trainer_kwargs={
-            'max_epochs': 1000,
+            'max_epochs': args.epochs,
             'default_root_dir': CHECKPOINT_PATH,
             'accelerator': 'gpu',
             'devices': 1,
@@ -63,6 +64,7 @@ if __name__ == '__main__':
             'callbacks': [
                 TQDMProgressBar(refresh_rate=250),
                 LearningRateMonitor(logging_interval='step'),
+                ModelCheckpoint(filename='last_{epoch}', every_n_epochs=args.checkpoint_interval),
                 ModelCheckpoint(filename='val_f1_macro_{epoch}_{val_f1_macro:.3f}', monitor='val_f1_macro', mode='max',
                                 every_n_epochs=args.checkpoint_interval, save_top_k=2),
                 ModelCheckpoint(filename='val_loss_{epoch}_{val_loss:.3f}', monitor='val_loss', mode='min',

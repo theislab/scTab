@@ -19,6 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
 
+    parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--batch_size', default=2048, type=int)
     parser.add_argument('--sub_sample_frac', default=1., type=float)
     parser.add_argument('--lr', default=0.005, type=float)
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     estim.init_datamodule(batch_size=args.batch_size, sub_sample_frac=args.sub_sample_frac)
     estim.init_trainer(
         trainer_kwargs={
-            'max_epochs': 1000,
+            'max_epochs': args.epochs,
             'gradient_clip_val': 1.,
             'gradient_clip_algorithm': 'norm',
             'accelerator': 'gpu',
@@ -77,6 +78,7 @@ if __name__ == '__main__':
             'callbacks': [
                 TQDMProgressBar(refresh_rate=250),
                 LearningRateMonitor(logging_interval='step'),
+                ModelCheckpoint(filename='last_{epoch}', every_n_epochs=args.checkpoint_interval),
                 ModelCheckpoint(filename='val_f1_macro_{epoch}_{val_f1_macro:.3f}', monitor='val_f1_macro', mode='max',
                                 every_n_epochs=args.checkpoint_interval, save_top_k=2),
                 ModelCheckpoint(filename='val_loss_{epoch}_{val_loss:.3f}', monitor='val_loss', mode='min',

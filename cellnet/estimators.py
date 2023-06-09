@@ -64,7 +64,6 @@ class EstimatorCellTypeClassifier:
         model_params = {
             'gene_dim': len(pd.read_parquet(join(self.data_path, 'var.parquet'))),
             'type_dim': len(pd.read_parquet(join(self.data_path, 'categorical_lookup/cell_type.parquet'))),
-            'feature_means': np.load(join(self.data_path, 'norm/zero_centering/means.npy')),
             'class_weights': np.load(join(self.data_path, 'class_weights.npy')),
             'child_matrix': np.load(join(self.data_path, 'cell_type_hierarchy/child_matrix.npy')),
             'train_set_size': sum(self.datamodule.train_dataset.partition_lens),
@@ -114,7 +113,7 @@ class EstimatorCellTypeClassifier:
         self._check_is_initialized()
         predictions_batched: List[torch.Tensor] = self.trainer.predict(
             self.model,
-            dataloaders=dataloader if dataloader else self.datamodule.predict_dataloader() ,
+            dataloaders=dataloader if dataloader else self.datamodule.predict_dataloader(),
             ckpt_path=ckpt_path
         )
         return torch.vstack(predictions_batched).numpy()
