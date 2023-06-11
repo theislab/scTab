@@ -1,7 +1,6 @@
 from os.path import join
 from typing import Dict, List
 
-import dask.dataframe as dd
 import lightning.pytorch as pl
 import numpy as np
 import pandas as pd
@@ -32,7 +31,7 @@ class EstimatorCellTypeClassifier:
     ):
         self.datamodule = MerlinDataModule(
             self.data_path,
-            columns=['idx', 'cell_type'],
+            columns=['cell_type'],
             batch_size=batch_size,
             sub_sample_frac=sub_sample_frac,
             dataloader_kwargs_train=dataloader_kwargs_train,
@@ -71,9 +70,6 @@ class EstimatorCellTypeClassifier:
             'batch_size': self.datamodule.batch_size,
         }
         if model_type == 'tabnet':
-            model_params['sample_labels'] = (
-                dd.read_parquet(join(self.data_path, 'train'), columns='cell_type').compute().to_numpy()
-            )
             model_params['augmentations'] = np.load(join(self.data_path, 'augmentations.npy'))
 
         return model_params

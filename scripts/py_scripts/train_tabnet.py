@@ -34,7 +34,6 @@ def parse_args():
     parser.add_argument('--virtual_batch_size', default=256, type=int)
     parser.add_argument('--mask_type', default='entmax', type=str)
     parser.add_argument('--augment_training_data', default=True, type=lambda x: x.lower() in ['true', '1', '1.'])
-    parser.add_argument('--correct_targets', default=False, type=lambda x: x.lower() in ['true', '1', '1.'])
     parser.add_argument('--lr_scheduler_step_size', default=1, type=int)
     parser.add_argument('--lr_scheduler_gamma', default=0.9, type=float)
     parser.add_argument('--version', default=None, type=str)
@@ -107,8 +106,7 @@ if __name__ == '__main__':
             'n_shared': args.n_shared,
             'virtual_batch_size': args.virtual_batch_size,
             'mask_type': args.mask_type,
-            'augment_training_data': args.augment_training_data,
-            'correct_targets': args.correct_targets
+            'augment_training_data': args.augment_training_data
         },
     )
     print(ModelSummary(estim.model))

@@ -44,7 +44,6 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         self.val_set_size = val_set_size
         self.batch_size = batch_size
         self.gc_freq = gc_frequency
-
         self.lr = learning_rate
         self.weight_decay = weight_decay
         self.optim = optimizer
@@ -58,7 +57,6 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         self.train_metrics = metrics.clone(prefix='train_')
         self.val_metrics = metrics.clone(prefix='val_')
         self.test_metrics = metrics.clone(prefix='test_')
-
         self.register_buffer('class_weights', torch.tensor(class_weights.astype('f4')))
         self.register_buffer('child_lookup', torch.tensor(child_matrix.astype('i8')))
 
@@ -80,7 +78,6 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         with torch.no_grad():
             batch = batch[0]
             batch['cell_type'] = torch.squeeze(batch['cell_type'])
-            batch['idx'] = torch.squeeze(batch['idx'])
 
         return batch
 
@@ -94,7 +91,6 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
         f1_micro = self.train_metrics['f1_micro'](preds, batch['cell_type'])
         self.log('train_f1_macro_step', f1_macro)
         self.log('train_f1_micro_step', f1_micro)
-
         if batch_idx % self.gc_freq == 0:
             gc.collect()
 
@@ -221,7 +217,6 @@ class TabnetClassifier(BaseClassifier):
         type_dim: int,
         class_weights: np.ndarray,
         child_matrix: np.ndarray,
-        sample_labels: np.ndarray,
         augmentations: np.ndarray,
         # params from datamodule
         train_set_size: int,
@@ -229,25 +224,23 @@ class TabnetClassifier(BaseClassifier):
         batch_size: int,
         # model specific params
         learning_rate: float = 0.005,
-        weight_decay: float = 0.1,
+        weight_decay: float = 0.05,
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
         # tabnet params
         lambda_sparse: float = 1e-5,
-        n_d: int = 256,
-        n_a: int = 128,
+        n_d: int = 128,
+        n_a: int = 64,
         n_steps: int = 3,
         gamma: float = 1.3,
-        n_independent: int = 3,
+        n_independent: int = 5,
         n_shared: int = 3,
         epsilon: float = 1e-15,
         virtual_batch_size: int = 256,
         momentum: float = 0.02,
         mask_type: str = 'entmax',
         augment_training_data: bool = True,
-        correct_targets: bool = False,
-        min_class_freq: int = 100
     ):
         super(TabnetClassifier, self).__init__(
             gene_dim=gene_dim,
@@ -263,8 +256,7 @@ class TabnetClassifier(BaseClassifier):
             lr_scheduler=lr_scheduler,
             lr_scheduler_kwargs=lr_scheduler_kwargs
         )
-        self.save_hyperparameters(
-            ignore=['class_weights', 'child_matrix', 'sample_labels', 'augmentations'])
+        self.save_hyperparameters(ignore=['class_weights', 'child_matrix', 'augmentations'])
 
         self.lambda_sparse = lambda_sparse
         classifier = TabNet(
@@ -287,41 +279,18 @@ class TabnetClassifier(BaseClassifier):
         if self.augment_training_data:
             self.register_buffer('augmentations', torch.tensor(augmentations.astype('f4')))
 
-        self.correct_targets = correct_targets
-        if self.correct_targets:
-            self.register_buffer('sample_labels', torch.tensor(sample_labels))
-            self.min_class_freq = int(min_class_freq)
-
         self.predict_bottleneck = False
 
     def _step(self, batch, training=True):
-        if self.augment_training_data & training:
-            x = self._augment_data(batch['X'])
-        else:
-            x = batch['X']
+        x = self._augment_data(batch['X']) if (self.augment_training_data and training) else batch['X']
         logits, m_loss = self(x)
 
         with torch.no_grad():
             preds = torch.argmax(logits, dim=1)
             preds_corrected, targets_corrected = self.hierarchy_correct(preds, batch['cell_type'])
-            if self.correct_targets:
-                # recalculate class weights with updated labels
-                with torch.no_grad():
-                    self.sample_labels[batch['idx']] = targets_corrected
-                    labels, counts = torch.unique(self.sample_labels, return_counts=True)
-                    # use minimum count of self.min_class_freq
-                    label_counts = self.min_class_freq * torch.ones(
-                        self.type_dim, dtype=torch.int64, device=labels.device)
-                    label_counts[labels] = counts
-                    weight = label_counts.sum() / (self.type_dim * label_counts)
-            else:
-                weight = self.class_weights
 
         if training:
-            if self.correct_targets:
-                loss = F.cross_entropy(logits, targets_corrected, weight=weight) - self.lambda_sparse * m_loss
-            else:
-                loss = F.cross_entropy(logits, batch['cell_type'], weight=weight) - self.lambda_sparse * m_loss
+            loss = F.cross_entropy(logits, batch['cell_type'], weight=self.class_weights) - self.lambda_sparse * m_loss
         else:
             loss = F.cross_entropy(logits, targets_corrected)
 
