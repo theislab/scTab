@@ -16,10 +16,10 @@ def parse_args():
     parser.add_argument('--version', type=str)
     parser.add_argument('--seed', default=1, type=int)
 
-    parser.add_argument('--n_estimators', type=int, default=500)
-    parser.add_argument('--eta', type=float, default=0.1)
+    parser.add_argument('--n_estimators', type=int, default=800)
+    parser.add_argument('--eta', type=float, default=0.05)
     parser.add_argument('--subsample', type=float, default=0.75)
-    parser.add_argument('--max_depth', type=int, default=15)
+    parser.add_argument('--max_depth', type=int, default=10)
     parser.add_argument('--early_stopping_rounds', type=int, default=10)
 
     return parser.parse_args()

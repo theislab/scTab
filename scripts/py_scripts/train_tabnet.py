@@ -18,6 +18,7 @@ torch.set_float32_matmul_precision('high')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
+    parser.add_argument('--data_path', type=str, default=None)
 
     parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--batch_size', default=2048, type=int)
@@ -27,7 +28,7 @@ def parse_args():
     parser.add_argument('--lambda_sparse', default=1e-5, type=float)
     parser.add_argument('--n_d', default=128, type=int)
     parser.add_argument('--n_a', default=64, type=int)
-    parser.add_argument('--n_steps', default=3, type=int)
+    parser.add_argument('--n_steps', default=1, type=int)
     parser.add_argument('--gamma', default=1.3, type=float)
     parser.add_argument('--n_independent', default=5, type=int)
     parser.add_argument('--n_shared', default=3, type=int)
@@ -40,6 +41,7 @@ def parse_args():
 
     parser.add_argument('--resume_from_checkpoint', type=str, default=None)
     parser.add_argument('--checkpoint_interval', default=1, type=int)
+    parser.add_argument('--check_val_every_n_epoch', default=1, type=int)
 
     parser.add_argument('--seed', default=1, type=int)
 
@@ -53,6 +55,8 @@ if __name__ == '__main__':
     # config parameters
     MODEL = 'cxg_2023_05_15_tabnet'
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
+    if args.data_path is not None:
+        DATA_PATH = args.data_path
 
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
     estim = EstimatorCellTypeClassifier(DATA_PATH)
@@ -66,9 +70,9 @@ if __name__ == '__main__':
             'accelerator': 'gpu',
             'devices': 1,
             'num_sanity_val_steps': 0,
-            'check_val_every_n_epoch': 1,
+            'check_val_every_n_epoch': args.check_val_every_n_epoch,
             'logger': [TensorBoardLogger(LOGS_PATH, name='default', version=args.version)],
-            'log_every_n_steps': 100,
+            'log_every_n_steps': 200,
             'detect_anomaly': False,
             'enable_progress_bar': True,
             'enable_model_summary': False,

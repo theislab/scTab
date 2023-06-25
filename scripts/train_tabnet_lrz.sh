@@ -16,7 +16,7 @@ DSSMCML_HOME="/dss/dssmcmlfs01/pn36po/pn36po-dss-0000/di93zer"
 
 SCRIPT="/dss/dsshome1/04/di93zer/git/cellnet/scripts/py_scripts/train_tabnet.py"
 GIT_REPO="/dss/dsshome1/04/di93zer/git/cellnet"
-ARGS="--version=version_1 --epochs=50"
+ARGS="--version=version_1 --epochs=48"
 
 srun --cpu-bind=verbose,socket --accel-bind=g --gres=gpu:1 \
      --container-mounts="/dss:/dss,${DSSFS02_HOME}:/mnt/dssfs02,${DSSMCML_HOME}:/mnt/dssmcmlfs01" \
