@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from scipy.sparse import csc_matrix, csr_matrix, issparse
 from sklearn.utils import sparsefuncs
@@ -79,13 +80,12 @@ class CustomDataset(Dataset):
             # replicate merlin dataloader output format
             out = (
                 {
-                    'X': x.squeeze(),
-                    'idx': self.obs.iloc[idx]['idx'].to_numpy().reshape((-1, 1)),
-                    'cell_type': self.obs.iloc[idx]['cell_type'].to_numpy().reshape((-1, 1))
+                    'X': torch.tensor(x.squeeze()),
+                    'cell_type': torch.tensor(self.obs.iloc[idx]['cell_type'].cat.codes.to_numpy().reshape((-1, 1)))
                 }, None
             )
         else:
-            out = ({'X': x.squeeze()}, None)
+            out = ({'X': torch.tensor(x.squeeze())}, None)
 
         return out
 
