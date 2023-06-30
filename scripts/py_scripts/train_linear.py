@@ -18,6 +18,7 @@ torch.set_float32_matmul_precision('high')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
+    parser.add_argument('--data_path', type=str, default=None)
 
     parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--batch_size', default=2048, type=int)
@@ -42,6 +43,8 @@ if __name__ == '__main__':
     # config parameters
     MODEL = 'cxg_2023_05_15_linear'
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
+    if args.data_path is not None:
+        DATA_PATH = args.data_path
 
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
     estim = EstimatorCellTypeClassifier(DATA_PATH)
