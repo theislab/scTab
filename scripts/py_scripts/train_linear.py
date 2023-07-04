@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('--batch_size', default=2048, type=int)
     parser.add_argument('--lr', default=0.0005, type=float)
     parser.add_argument('--weight_decay', default=0.01, type=float)
+    parser.add_argument('--use_class_weights', default=True, type=lambda x: x.lower() in ['true', '1', '1.'])
     parser.add_argument('--lr_scheduler_step_size', default=1, type=int)
     parser.add_argument('--lr_scheduler_gamma', default=0.9, type=float)
     parser.add_argument('--version', default=None, type=str)
@@ -80,6 +81,7 @@ if __name__ == '__main__':
         model_kwargs={
             'learning_rate': args.lr,
             'weight_decay': args.weight_decay,
+            'use_class_weights': args.use_class_weights,
             'optimizer': torch.optim.AdamW,
             'lr_scheduler': torch.optim.lr_scheduler.StepLR,
             'lr_scheduler_kwargs': {

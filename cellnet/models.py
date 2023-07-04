@@ -169,6 +169,7 @@ class LinearClassifier(BaseClassifier):
         # model specific params
         learning_rate: float = 0.005,
         weight_decay: float = 0.1,
+        use_class_weights: bool = True,
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
@@ -189,6 +190,7 @@ class LinearClassifier(BaseClassifier):
         )
         self.save_hyperparameters(ignore=['class_weights', 'parent_matrix', 'child_matrix'])
 
+        self.use_class_weights = use_class_weights
         self.classifier = nn.Linear(gene_dim, type_dim)
 
     def _step(self, batch, training=True):
@@ -197,7 +199,10 @@ class LinearClassifier(BaseClassifier):
         targets = batch['cell_type']
         preds = torch.argmax(logits, dim=1)
         if training:
-            loss = F.cross_entropy(logits, targets, weight=self.class_weights)
+            if self.use_class_weights:
+                loss = F.cross_entropy(logits, targets, weight=self.class_weights)
+            else:
+                loss = F.cross_entropy(logits, targets)
         else:
             loss = F.cross_entropy(logits, targets)
 
