@@ -273,6 +273,7 @@ class TabnetClassifier(BaseClassifier):
         # model specific params
         learning_rate: float = 0.005,
         weight_decay: float = 0.05,
+        use_class_weights: bool = True,
         optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
         lr_scheduler: Callable = None,
         lr_scheduler_kwargs: Dict = None,
@@ -323,6 +324,7 @@ class TabnetClassifier(BaseClassifier):
         )
         self.classifier = classifier
 
+        self.use_class_weights = use_class_weights
         self.augment_training_data = augment_training_data
         if self.augment_training_data:
             self.register_buffer('augmentations', torch.tensor(augmentations.astype('f4')))
@@ -336,7 +338,11 @@ class TabnetClassifier(BaseClassifier):
             preds = torch.argmax(logits, dim=1)
             preds_corrected, targets_corrected = self.hierarchy_correct(preds, batch['cell_type'])
         if training:
-            loss = F.cross_entropy(logits, batch['cell_type'], weight=self.class_weights) - self.lambda_sparse * m_loss
+            if self.use_class_weights:
+                loss = F.cross_entropy(logits, batch['cell_type'],
+                                       weight=self.class_weights) - self.lambda_sparse * m_loss
+            else:
+                loss = F.cross_entropy(logits, batch['cell_type']) - self.lambda_sparse * m_loss
         else:
             loss = F.cross_entropy(logits, targets_corrected)
 
