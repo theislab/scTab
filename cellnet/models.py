@@ -13,6 +13,49 @@ from torchmetrics.classification import MulticlassF1Score
 from cellnet.tabnet.tab_network import TabNet
 
 
+class MLP(nn.Module):
+
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        hidden_size: int = 128,
+        n_hidden: int = 8,
+        dropout: float = 0.1
+    ):
+        super().__init__()
+        assert n_hidden >= 1
+
+        modules = [
+            nn.Linear(input_dim, hidden_size),
+            nn.BatchNorm1d(hidden_size),
+            nn.SiLU(),
+            nn.Dropout(p=dropout)
+        ]
+        for _ in range(1, n_hidden):
+            modules += [
+                nn.Linear(hidden_size, hidden_size),
+                nn.BatchNorm1d(hidden_size),
+                nn.SiLU(),
+                nn.Dropout(p=dropout)
+            ]
+
+        self.encoder = nn.Sequential(*modules)
+        self.linear = nn.Linear(hidden_size, output_dim)
+
+    def forward(self, x):
+        return self.linear(self.encoder(x))
+
+
+def augment_data(x: torch.Tensor, augmentation_vectors: torch.Tensor):
+    augmentations = augmentation_vectors[
+        torch.randint(0, augmentation_vectors.shape[0], (x.shape[0], ), device=x.device), :
+    ]
+    sign = 2. * (torch.bernoulli(.5 * torch.ones(x.shape[0], 1, device=x.device)) - .5)
+
+    return torch.clamp(x + (sign * augmentations), min=0., max=9.)
+
+
 class BaseClassifier(pl.LightningModule, abc.ABC):
 
     classifier: nn.Module  # classifier mapping von gene_dim to type_dim - outputs logits
@@ -287,13 +330,11 @@ class TabnetClassifier(BaseClassifier):
         self.predict_bottleneck = False
 
     def _step(self, batch, training=True):
-        x = self._augment_data(batch['X']) if (self.augment_training_data and training) else batch['X']
+        x = augment_data(batch['X'], self.augmentations) if (self.augment_training_data and training) else batch['X']
         logits, m_loss = self(x)
-
         with torch.no_grad():
             preds = torch.argmax(logits, dim=1)
             preds_corrected, targets_corrected = self.hierarchy_correct(preds, batch['cell_type'])
-
         if training:
             loss = F.cross_entropy(logits, batch['cell_type'], weight=self.class_weights) - self.lambda_sparse * m_loss
         else:
@@ -301,25 +342,96 @@ class TabnetClassifier(BaseClassifier):
 
         return preds_corrected, loss
 
-    def _augment_data(self, x: torch.Tensor):
-        augmentations = self.augmentations[
-            torch.randint(0, self.augmentations.shape[0], (x.shape[0], ), device=x.device), :
-        ]
-        sign = 2. * (torch.bernoulli(.5 * torch.ones(x.shape[0], 1, device=x.device)) - .5)
-
-        return torch.clamp(x + (sign * augmentations), min=0., max=9.)
-
     def predict_embedding(self, x: torch.Tensor):
         steps_output, _ = self.classifier.encoder(x)
         res = torch.sum(torch.stack(steps_output, dim=0), dim=0)
-
         return res
 
     def predict_cell_types(self, x: torch.Tensor):
         return F.softmax(self(x)[0], dim=1)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        if batch_idx % self.gc_freq == 0:
+            gc.collect()
         if self.predict_bottleneck:
             return self.predict_embedding(batch['X'])
         else:
             return self.predict_cell_types(batch['X'])
+
+
+class MLPClassifier(BaseClassifier):
+
+    def __init__(
+        self,
+        # fixed params
+        gene_dim: int,
+        type_dim: int,
+        class_weights: np.ndarray,
+        child_matrix: np.ndarray,
+        augmentations: np.ndarray,
+        # params from datamodule
+        train_set_size: int,
+        val_set_size: int,
+        batch_size: int,
+        # model specific params
+        learning_rate: float = 0.005,
+        weight_decay: float = 0.05,
+        optimizer: Callable[..., torch.optim.Optimizer] = torch.optim.AdamW,
+        lr_scheduler: Callable = None,
+        lr_scheduler_kwargs: Dict = None,
+        # MLP params
+        hidden_size: int = 128,
+        n_hidden: int = 8,
+        dropout: float = 0.2,
+        augment_training_data: bool = True,
+    ):
+        super(MLPClassifier, self).__init__(
+            gene_dim=gene_dim,
+            type_dim=type_dim,
+            class_weights=class_weights,
+            child_matrix=child_matrix,
+            train_set_size=train_set_size,
+            val_set_size=val_set_size,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            weight_decay=weight_decay,
+            optimizer=optimizer,
+            lr_scheduler=lr_scheduler,
+            lr_scheduler_kwargs=lr_scheduler_kwargs
+        )
+        self.save_hyperparameters(ignore=['class_weights', 'child_matrix', 'augmentations'])
+
+        self.classifier = MLP(
+            input_dim=gene_dim,
+            output_dim=type_dim,
+            hidden_size=hidden_size,
+            n_hidden=n_hidden,
+            dropout=dropout
+        )
+
+        self.augment_training_data = augment_training_data
+        if self.augment_training_data:
+            self.register_buffer('augmentations', torch.tensor(augmentations.astype('f4')))
+
+        self.predict_bottleneck = False
+
+    def _step(self, batch, training=True):
+        x = augment_data(batch['X'], self.augmentations) if (self.augment_training_data and training) else batch['X']
+        logits = self(x)
+        with torch.no_grad():
+            preds = torch.argmax(logits, dim=1)
+            preds_corrected, targets_corrected = self.hierarchy_correct(preds, batch['cell_type'])
+        if training:
+            loss = F.cross_entropy(logits, batch['cell_type'], weight=self.class_weights)
+        else:
+            loss = F.cross_entropy(logits, targets_corrected)
+
+        return preds_corrected, loss
+
+    def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        if batch_idx % self.gc_freq == 0:
+            gc.collect()
+        if self.predict_bottleneck:
+            return self.classifier.encoder(batch['X'])
+        else:
+            return F.softmax(self(batch['X']), dim=1)

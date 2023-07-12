@@ -8,7 +8,7 @@ import torch
 from lightning.pytorch.tuner.tuning import Tuner
 
 from cellnet.datamodules import MerlinDataModule
-from cellnet.models import TabnetClassifier, LinearClassifier
+from cellnet.models import TabnetClassifier, LinearClassifier, MLPClassifier
 
 
 class EstimatorCellTypeClassifier:
@@ -45,6 +45,8 @@ class EstimatorCellTypeClassifier:
             self.model = TabnetClassifier(**{**self.get_fixed_model_params(model_type), **model_kwargs})
         elif model_type == 'linear':
             self.model = LinearClassifier(**{**self.get_fixed_model_params(model_type), **model_kwargs})
+        elif model_type == 'mlp':
+            self.model = MLPClassifier(**{**self.get_fixed_model_params(model_type), **model_kwargs})
         else:
             raise ValueError(f'model_type has to be in ["linear", "tabnet"]. You supplied: {model_type}')
 
@@ -69,7 +71,7 @@ class EstimatorCellTypeClassifier:
             'val_set_size': sum(self.datamodule.val_dataset.partition_lens),
             'batch_size': self.datamodule.batch_size,
         }
-        if model_type == 'tabnet':
+        if model_type in ['tabnet', 'mlp']:
             model_params['augmentations'] = np.load(join(self.data_path, 'augmentations.npy'))
 
         return model_params
