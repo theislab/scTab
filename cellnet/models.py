@@ -239,17 +239,18 @@ class LinearClassifier(BaseClassifier):
     def _step(self, batch, training=True):
         x = batch['X']
         logits = self(x)
-        targets = batch['cell_type']
-        preds = torch.argmax(logits, dim=1)
+        with torch.no_grad():
+            preds = torch.argmax(logits, dim=1)
+            preds_corrected, targets_corrected = self.hierarchy_correct(preds, batch['cell_type'])
         if training:
             if self.use_class_weights:
-                loss = F.cross_entropy(logits, targets, weight=self.class_weights)
+                loss = F.cross_entropy(logits, batch['cell_type'], weight=self.class_weights)
             else:
-                loss = F.cross_entropy(logits, targets)
+                loss = F.cross_entropy(logits, batch['cell_type'])
         else:
-            loss = F.cross_entropy(logits, targets)
+            loss = F.cross_entropy(logits, targets_corrected)
 
-        return preds, loss
+        return preds_corrected, loss
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         x = batch['X']
