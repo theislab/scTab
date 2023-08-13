@@ -107,10 +107,10 @@ class BaseClassifier(pl.LightningModule, abc.ABC):
     def _step(self, batch, training=True) -> Tuple[torch.Tensor, torch.Tensor]:
         pass
 
-    def hierarchy_correct(self, preds, targets) -> Tuple[torch.Tensor, torch.Tensor]:
-        pred_is_child_node_or_node = torch.sum(
-            self.child_lookup[targets, :] * F.one_hot(preds, self.type_dim), dim=1
-        ) > 0
+    def hierarchy_correct(self, preds: torch.Tensor, targets: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        pred_is_child_node_or_node = torch.gt(
+            torch.sum(self.child_lookup[targets, :] * F.one_hot(preds, self.type_dim), dim=1), 0
+        )
 
         return (
             torch.where(pred_is_child_node_or_node, targets, preds),  # corrected preds
