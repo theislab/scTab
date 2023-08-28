@@ -19,6 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
     parser.add_argument('--data_path', type=str, default=None)
+    parser.add_argument('--logging_dir', type=str, default='cxg_2023_05_15_linear')
 
     parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--batch_size', default=2048, type=int)
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     print(args)
 
     # config parameters
-    MODEL = 'cxg_2023_05_15_linear'
+    MODEL = args.logging_dir
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
     if args.data_path is not None:
         DATA_PATH = args.data_path
