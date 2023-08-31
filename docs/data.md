@@ -1,6 +1,6 @@
 # Data set creation
 **Author:** Felix Fischer (GitHub @felix0097) \
-**Date:** 12.06.2023
+**Date:** 29.08.2023
 
 ## Data set curation
 * Based on Cell-by-Gene (CxG) census version `2023-05-15` 
@@ -92,14 +92,13 @@ Preprocessing includes the following steps:
 ## Data preparation pipeline
 
 * The data preparation pipeline can be found under `notebooks/store_creation`:
-  1. `01_create_train_val_test_splits.ipynb`: Subset and download data from CxG census. And split downloaded data into 
-  train, val and test set
-  2. optional `02_fit_quantile_norm.ipynb`: Fit quantile normalization model (only necessary for quantile normalized 
-     data - can be skipped with default size factor + log1p normalization)
+  1. `01_download_data.ipynb`: Subset and download data from CELLxGENE census.
+  2. `02_create_train_val_test_split.ipynb`: Split data into train, val and test sets
   3. `03_write_store_merlin.ipynb`: Save data into on-disk format that can be used by Nvidia Merlin dataloader 
   (https://github.com/NVIDIA-Merlin/dataloader)
   4. `04_create_hierarchy_matrices.ipynb`: Create child node lookup matrix to find subtypes based on cell type 
   ontology
   5. `05_compute_pca.ipynb`: Compute PCA embeddings for visualization (50 components) and model training 
   (256 components)
-  6. `06_check_written_store.ipynb`: Sanity check written data
+  6. `06_check_written_store.ipynb` (can be skipped): Sanity check written data
+  7. `07_data_summary.ipynb` (can be skipped): Data summary statistics

@@ -25,7 +25,7 @@ setup(
     author="Felix Fischer",
     author_email="felix.fischer@helmholtz-muenchen.de",
     description="Scaling single cell models to bigger data sets.",
-    long_description=read("README.rst"),
+    long_description=read("README.md"),
     packages=find_packages(exclude=('tests',)),
     install_requires=requirements,
     classifiers=[
