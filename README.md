@@ -3,7 +3,7 @@ cellnet
 De novo cell type prediction model for single-cell RNA-seq data that can be trained across a large-scale collection of 
 curated datasets.
 
-Model checkpoints and traning data:
+Model checkpoints and traning data
 -----
 * Training data (compatible with Merlin Dataloader infrastructure): https://pklab.med.harvard.edu/felix/data/merlin_cxg_2023_05_15_sf-log1p.tar.gz (164GB) 
 * Model checkpoints: https://pklab.med.harvard.edu/felix/data/scTab-checkpoints.tar.gz (8.1GB)
@@ -41,4 +41,4 @@ MIT license
 
 Authors
 -------
-`cellnet` was written by `Felix Fischer <felix.fischer@helmholtz-muenchen.de>`.
+`cellnet` was written by `Felix Fischer <felix.fischer@helmholtz-munich.de>`
