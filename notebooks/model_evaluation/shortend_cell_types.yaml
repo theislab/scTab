@@ -11,15 +11,13 @@ CD4-positive helper T cell: CD4+ helper T cell
 CD4-positive, alpha-beta T cell: CD4+, $\alpha$-$\beta$ T cell
 CD4-positive, alpha-beta cytotoxic T cell: CD4+, $\alpha$-$\beta$ cytotoxic T cell
 CD4-positive, alpha-beta memory T cell: CD4+, $\alpha$-$\beta$ mem. T cell
-CD8-alpha-alpha-positive, alpha-beta intraepithelial T cell: "CD8-$\\alpha$-$\\alpha$+,\
-  \ $\alpha$-$\beta$ intraepith. T cell"
+CD8-alpha-alpha-positive, alpha-beta intraepithelial T cell: CD8-$\alpha$-$\alpha$+,\ $\alpha$-$\beta$ intraepith. T cell
 CD8-positive, alpha-beta T cell: CD8+, $\alpha$-$\beta$ T cell
 CD8-positive, alpha-beta cytotoxic T cell: CD8+, $\alpha$-$\beta$ cytotoxic T cell
 CD8-positive, alpha-beta memory T cell: CD8+, $\alpha$-$\beta$ mem. T cell
 IgA plasma cell: IgA plasma cell
 IgG plasma cell: IgG plasma cell
-L2/3-6 intratelencephalic projecting glutamatergic cortical neuron: L2/3-6 IT projecting
-  neuron
+L2/3-6 intratelencephalic projecting glutamatergic cortical neuron: L2/3-6 IT projecting neuron
 L6b glutamatergic cortical neuron: L6b glutamatergic cortical neuron
 Schwann cell: Schwann cell
 T cell: T cell
@@ -31,8 +29,8 @@ activated CD8-positive, alpha-beta T cell: activated CD8+, $\alpha$-$\beta$ T ce
 alpha-beta T cell: $\alpha$-$\beta$ T cell
 alternatively activated macrophage: alternatively activated macrophage
 alveolar macrophage: alveolar macrophage
-alveolar type 1 fibroblast cell: alveolar type 1 fibroblast cell
-alveolar type 2 fibroblast cell: alveolar type 2 fibroblast cell
+alveolar type 1 fibroblast cell: alveolar type 1 fibroblast
+alveolar type 2 fibroblast cell: alveolar type 2 fibroblast
 amacrine cell: amacrine cell
 astrocyte: astrocyte
 astrocyte of the cerebral cortex: astrocyte of the cerebral cortex
@@ -43,34 +41,25 @@ bronchus fibroblast of lung: bronchus fibroblast of lung
 capillary endothelial cell: capillary endothelial cell
 cardiac muscle cell: cardiac muscle cell
 cardiac neuron: cardiac neuron
-caudal ganglionic eminence derived GABAergic cortical interneuron: caudal ganglionic
-  eminence der. GABAergic cortical interneuron
-central memory CD4-positive, alpha-beta T cell: central mem. CD4+, $\alpha$-$\beta$
-  T cell
-central memory CD8-positive, alpha-beta T cell: central mem. CD8+, $\alpha$-$\beta$
-  T cell
+caudal ganglionic eminence derived GABAergic cortical interneuron: CGE cortical interneuron
+central memory CD4-positive, alpha-beta T cell: central mem. CD4+, $\alpha$-$\beta$ T cell
+central memory CD8-positive, alpha-beta T cell: central mem. CD8+, $\alpha$-$\beta$ T cell
 central nervous system macrophage: central nervous sys. macrophage
-chandelier pvalb GABAergic cortical interneuron: chandelier pvalb GABAergic cortical
-  interneuron
-ciliated columnar cell of tracheobronchial tree: ciliated columnar cell of tracheobronchial
-  tree
+chandelier pvalb GABAergic cortical interneuron: Chandelier PV
+ciliated columnar cell of tracheobronchial tree: ciliated columnar cell of tracheobronchial tree
 class switched memory B cell: class switched mem. B cell
-classical monocyte: clas. monocyte
+classical monocyte: classical monocyte
 club cell: club cell
 conventional dendritic cell: conventional dendritic cell
-corticothalamic-projecting glutamatergic cortical neuron: corticothalamic-project.
-  glutamatergic cortical neuron
+corticothalamic-projecting glutamatergic cortical neuron: CT projecting neuron
 dendritic cell: dendritic cell
 double negative T regulatory cell: double negative T regulatory cell
 double negative thymocyte: double negative thymocyte
 double-positive, alpha-beta thymocyte: double+, $\alpha$-$\beta$ thymocyte
 effector CD8-positive, alpha-beta T cell: effector CD8+, $\alpha$-$\beta$ T cell
-effector memory CD4-positive, alpha-beta T cell: effector mem. CD4+, $\alpha$-$\beta$
-  T cell
-effector memory CD8-positive, alpha-beta T cell: effector mem. CD8+, $\alpha$-$\beta$
-  T cell
-effector memory CD8-positive, alpha-beta T cell, terminally differentiated: effector
-  mem. CD8+, $\alpha$-$\beta$ T cell, term. diff.
+effector memory CD4-positive, alpha-beta T cell: effector mem. CD4+, $\alpha$-$\beta$ T cell
+effector memory CD8-positive, alpha-beta T cell: effector mem. CD8+, $\alpha$-$\beta$ T cell
+effector memory CD8-positive, alpha-beta T cell, terminally differentiated: effector mem. CD8+, $\alpha$-$\beta$ T cell, term. diff.
 elicited macrophage: elicited macrophage
 endothelial cell: endothelial cell
 endothelial cell of artery: endothelial cell of artery
@@ -103,23 +92,18 @@ keratinocyte: keratinocyte
 kidney collecting duct intercalated cell: kidney collecting duct intercalated cell
 kidney collecting duct principal cell: kidney collecting duct principal cell
 kidney connecting tubule epithelial cell: kidney connecting tubule epith. cell
-kidney distal convoluted tubule epithelial cell: kidney distal convoluted tubule epith.
-  cell
+kidney distal convoluted tubule epithelial cell: kidney distal convoluted tubule epith. cell
 kidney interstitial fibroblast: kidney interstitial fibroblast
-kidney loop of Henle thick ascending limb epithelial cell: kidney loop Henle thick
-  asc. limb epith. cell
-kidney loop of Henle thin ascending limb epithelial cell: kidney loop Henle thin asc.
-  limb epith. cell
-kidney loop of Henle thin descending limb epithelial cell: kidney loop Henle thin
-  des. limb epith. cell
+kidney loop of Henle thick ascending limb epithelial cell: kidney loop Henle thick asc. limb epith. cell
+kidney loop of Henle thin ascending limb epithelial cell: kidney loop Henle thin asc. limb epith. cell
+kidney loop of Henle thin descending limb epithelial cell: kidney loop Henle thin des. limb epith. cell
 lamp5 GABAergic cortical interneuron: lamp5 GABAergic cortical interneuron
 leukocyte: leukocyte
 luminal epithelial cell of mammary gland: luminal epith. cell of mammary gland
 lung macrophage: lung macrophage
 lung pericyte: lung pericyte
 lymphocyte: lymphocyte
-lymphoid lineage restricted progenitor cell: lymphoid lineage restricted progenitor
-  cell
+lymphoid lineage restricted progenitor cell: lymphoid lineage restricted progenitor cell
 macrophage: macrophage
 mast cell: mast cell
 mature B cell: mature B cell
@@ -138,14 +122,11 @@ mucous neck cell: mucous neck cell
 myoepithelial cell of mammary gland: myoepithelial cell of mammary gland
 naive B cell: naive B cell
 naive T cell: naive T cell
-naive thymus-derived CD4-positive, alpha-beta T cell: naive thym.-der. CD4+, $\alpha$-$\beta$
-  T cell
-naive thymus-derived CD8-positive, alpha-beta T cell: naive thym.-der. CD8+, $\alpha$-$\beta$
-  T cell
+naive thymus-derived CD4-positive, alpha-beta T cell: naive thym.-der. CD4+, $\alpha$-$\beta$ T cell
+naive thymus-derived CD8-positive, alpha-beta T cell: naive thym.-der. CD8+, $\alpha$-$\beta$ T cell
 nasal mucosa goblet cell: nasal mucosa goblet cell
 natural killer cell: NK cell
-near-projecting glutamatergic cortical neuron: near-project. glutamatergic cortical
-  neuron
+near-projecting glutamatergic cortical neuron: near-project. glutamatergic cortical neuron
 neuron: neuron
 neutrophil: neutrophil
 non-classical monocyte: non-classical monocyte
