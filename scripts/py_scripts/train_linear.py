@@ -18,11 +18,14 @@ torch.set_float32_matmul_precision('high')
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cluster', type=str)
+    parser.add_argument('--data_path', type=str, default=None)
+    parser.add_argument('--logging_dir', type=str, default='cxg_2023_05_15_linear')
 
     parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--batch_size', default=2048, type=int)
     parser.add_argument('--lr', default=0.0005, type=float)
     parser.add_argument('--weight_decay', default=0.01, type=float)
+    parser.add_argument('--use_class_weights', default=True, type=lambda x: x.lower() in ['true', '1', '1.'])
     parser.add_argument('--lr_scheduler_step_size', default=1, type=int)
     parser.add_argument('--lr_scheduler_gamma', default=0.9, type=float)
     parser.add_argument('--version', default=None, type=str)
@@ -40,8 +43,10 @@ if __name__ == '__main__':
     print(args)
 
     # config parameters
-    MODEL = 'cxg_2023_05_15_linear'
+    MODEL = args.logging_dir
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
+    if args.data_path is not None:
+        DATA_PATH = args.data_path
 
     sleep(uniform(0., 30.))  # add random sleep interval to avoid duplicated tensorboard log dirs
     estim = EstimatorCellTypeClassifier(DATA_PATH)
@@ -77,6 +82,7 @@ if __name__ == '__main__':
         model_kwargs={
             'learning_rate': args.lr,
             'weight_decay': args.weight_decay,
+            'use_class_weights': args.use_class_weights,
             'optimizer': torch.optim.AdamW,
             'lr_scheduler': torch.optim.lr_scheduler.StepLR,
             'lr_scheduler_kwargs': {

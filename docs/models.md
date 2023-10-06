@@ -19,6 +19,14 @@
 * Output: class probabilities
 
 
+## MLP model
+* Multi-layer perceptron (MLP) model trained with cross-entropy loss
+* Implementation: `MLPClassifier` class under `cellnet/models.py` 
+* Input features: 19331 protein coding genes
+* Feature normalization: Normalize each cell to have 10000 counts + log1p transform
+* Output: class probabilities
+
+
 ## XGBoost model
 * Based on official XGBoost model: https://xgboost.readthedocs.io/en/stable/ (version 1.6.2)
 * Trained with `multi:softprob` objective

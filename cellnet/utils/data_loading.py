@@ -1,8 +1,9 @@
 import numpy as np
+import torch
 
 from scipy.sparse import csc_matrix, csr_matrix, issparse
 from sklearn.utils import sparsefuncs
-from torch.utils.data import Dataset, DataLoader, BatchSampler, SequentialSampler
+from torch.utils.data import Dataset, DataLoader, BatchSampler, SequentialSampler, RandomSampler
 
 """
 Data streamlining.
@@ -79,20 +80,20 @@ class CustomDataset(Dataset):
             # replicate merlin dataloader output format
             out = (
                 {
-                    'X': x.squeeze(),
-                    'idx': self.obs.iloc[idx]['idx'].to_numpy().reshape((-1, 1)),
-                    'cell_type': self.obs.iloc[idx]['cell_type'].to_numpy().reshape((-1, 1))
+                    'X': torch.tensor(x.squeeze()),
+                    'cell_type': torch.tensor(self.obs.iloc[idx]['cell_type'].cat.codes.to_numpy().reshape((-1, 1)))
                 }, None
             )
         else:
-            out = ({'X': x.squeeze()}, None)
+            out = ({'X': torch.tensor(x.squeeze())}, None)
 
         return out
 
 
-def dataloader_factory(x, obs=None, batch_size=2048):
-    return DataLoader(
-        CustomDataset(x, obs),
-        sampler=BatchSampler(SequentialSampler(range(x.shape[0])), batch_size=batch_size, drop_last=False),
-        batch_size=None
-    )
+def dataloader_factory(x, obs=None, batch_size=2048, shuffle=False):
+    if shuffle:
+        sampler = BatchSampler(RandomSampler(range(x.shape[0])), batch_size=batch_size, drop_last=True)
+    else:
+        sampler = BatchSampler(SequentialSampler(range(x.shape[0])), batch_size=batch_size, drop_last=False)
+
+    return DataLoader(CustomDataset(x, obs), sampler=sampler, batch_size=None)

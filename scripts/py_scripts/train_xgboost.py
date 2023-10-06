@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--cluster', type=str)
+    parser.add_argument('--logging_dir', type=str, default='cxg_2023_05_15_xgboost')
     parser.add_argument('--version', type=str)
     parser.add_argument('--seed', default=1, type=int)
 
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     print(args)
 
     # config parameters
-    MODEL = 'cxg_2023_05_15_xgboost'
+    MODEL = args.logging_dir
     CHECKPOINT_PATH, LOGS_PATH, DATA_PATH = get_paths(args.cluster, MODEL)
     # save hparams to json
     with open(join(CHECKPOINT_PATH, f'{args.version}_hparams.json'), 'w') as f:
