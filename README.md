@@ -1,4 +1,4 @@
-cellnet
+scTab
 =======
 De novo cell type prediction model for single-cell RNA-seq data that can be trained across a large-scale collection of 
 curated datasets.
@@ -41,6 +41,7 @@ MIT license
 
 Authors
 -------
-`cellnet` was written by `Felix Fischer <felix.fischer@helmholtz-munich.de>`
+`scTab` was written by `Felix Fischer <felix.fischer@helmholtz-munich.de>`
 
-Support for software development, testing, modeling, and benchmarking provided by the Cell Annotation Platform team (Roman Mukhin, Andrey Isaev, Uğur Bayındır)
+Support for software development, testing, modeling, and benchmarking provided by the Cell Annotation Platform team 
+(Roman Mukhin, Andrey Isaev, Uğur Bayındır)
