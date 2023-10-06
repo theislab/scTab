@@ -42,3 +42,5 @@ MIT license
 Authors
 -------
 `cellnet` was written by `Felix Fischer <felix.fischer@helmholtz-munich.de>`
+
+Support for software development, testing, modeling, and benchmarking provided by the Cell Annotation Platform team (Roman Mukhin, Andrey Isaev, Uğur Bayındır)
