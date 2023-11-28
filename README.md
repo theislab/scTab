@@ -7,6 +7,7 @@ Model checkpoints and traning data
 -----
 * Training data (compatible with Merlin Dataloader infrastructure): https://pklab.med.harvard.edu/felix/data/merlin_cxg_2023_05_15_sf-log1p.tar.gz (164GB) 
 * Model checkpoints: https://pklab.med.harvard.edu/felix/data/scTab-checkpoints.tar.gz (8.1GB)
+* Minimal subset of the training, validation and test data: https://pklab.med.harvard.edu/felix/data/merlin_cxg_2023_05_15_sf-log1p_minimal.tar.gz (0.5GB)
 
 Project structure
 -----
@@ -29,11 +30,37 @@ Project structure
 
 Installation
 ------------
+
+### Installation via Nvidia Enroot / Docker (easy)
+A base docker image with most packages preinstalled can be pulled from here: 
+nvcr.io/nvidia/merlin/merlin-pytorch:23.02
+
+Moreover, the Nvidia Enroot (https://github.com/NVIDIA/enroot) container image which was used to run all the experiments 
+in this paper can be found to download here: https://pklab.med.harvard.edu/felix/data/merlin-2302.sqsh
+
+For ease of use, we recommend to use the above supplied Enroot container image as it comes with all relevant software 
+preinstalled.
+
+### Installation via pip
 Run the following command the project folder to install the ``cellnet`` package:
 ``pip install -e .``
 
 To install GPU dependencies install the dependencies from the ``requirements-gpu.txt`` file first. 
 To do so, use ``--extra-index-url https://pypi.nvidia.com/`` argument when installing packages via pip.
+
+Installation time on a local computer should be a couple of minutes.
+
+System requirements
+------------
+Operating system: Ubuntu 20.04.5 LTS (used OS version)\
+Python version: 3.8 or 3.10\
+Packages: See requirements.txt and requirements-gpu.txt
+
+Hardware requirements
+------------
+Due to high computational demands, a modern GPU (e.g. Nvidia A100 or V100 GPU with at least 16GB of VRAM) is needed to 
+run the training and evaluation scripts in this repository.\
+On a normal desktop computer without GPU acceleration runtime will probably exceed several days.
 
 Licence
 -------
