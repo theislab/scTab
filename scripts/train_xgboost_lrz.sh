@@ -6,7 +6,7 @@
 #SBATCH --partition=lrz-dgx-a100-80x8
 #SBATCH --gres=gpu:1
 #SBATCH --time 3-00:00:00
-#SBATCH --mem=90GB
+#SBATCH --mem=200GB
 #SBATCH --cpus-per-task=12
 
 
