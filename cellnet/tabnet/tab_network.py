@@ -30,7 +30,7 @@ class GBN(torch.nn.Module):
         self.bn = BatchNorm1d(self.input_dim, momentum=momentum)
 
     def forward(self, x):
-        chunks = x.chunk(x.shape[0] // self.virtual_batch_size, 0)
+        chunks = x.chunk(max(x.shape[0] // self.virtual_batch_size, 1), 0)
         res = [self.bn(x_) for x_ in chunks]
 
         return torch.cat(res, dim=0)
