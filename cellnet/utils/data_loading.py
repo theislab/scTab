@@ -14,20 +14,27 @@ def streamline_count_matrix(x_raw, gene_names_raw, gene_names_model):
     assert len(gene_names_raw) == len(set(gene_names_raw))
     assert len(gene_names_model) == len(set(gene_names_model))
     assert len(gene_names_raw) == x_raw.shape[1]
-    gene_names_raw = np.array(gene_names_raw)
-    gene_names_model = np.array(gene_names_model)
-    # convert to csc_matrix for fast column-wise slicing
-    x_raw = csc_matrix(x_raw)
-    row, col, data = [], [], []
+    assert np.isin(gene_names_raw, gene_names_model).sum() == x_raw.shape[1]
+    # For fast column-wise slicing matrix has to be in csc format
+    assert isinstance(x_raw, csc_matrix)
+    # skip zero filling missing genes if all genes are present
+    if len(gene_names_raw) == len(gene_names_model):
+        return x_raw.tocsr().astype('f4')
+    gene_names_raw, gene_names_model = np.array(gene_names_raw), np.array(gene_names_model)
+    row, col = np.empty(x_raw.nnz, dtype='i8'), np.empty(x_raw.nnz, dtype='i8')
+    data = np.empty(x_raw.nnz, dtype='f4')
 
+    ctr = 0
     for i, gene in enumerate(gene_names_model):
         if gene in gene_names_raw:
             gene_idx = int(np.where(gene == gene_names_raw)[0])
             x_col = x_raw[:, gene_idx]
             idxs_nnz = x_col.indices.tolist()
-            col += ([i] * len(idxs_nnz))
-            row += idxs_nnz
-            data += x_col.data.tolist()
+            n_nnz = len(idxs_nnz)
+            col[ctr:ctr+n_nnz] = i
+            row[ctr:ctr+n_nnz] = idxs_nnz
+            data[ctr:ctr+n_nnz] = x_col.data
+            ctr += n_nnz
 
     return csr_matrix(
         (data, (row, col)),
@@ -81,7 +88,9 @@ class CustomDataset(Dataset):
             out = (
                 {
                     'X': torch.tensor(x.squeeze()),
-                    'cell_type': torch.tensor(self.obs.iloc[idx]['cell_type'].cat.codes.to_numpy().reshape((-1, 1)))
+                    'cell_type': torch.tensor(
+                        self.obs.iloc[idx]['cell_type'].cat.codes.to_numpy().reshape((-1, 1)).astype('i8')
+                    )
                 }, None
             )
         else:
