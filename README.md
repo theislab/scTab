@@ -72,3 +72,11 @@ Authors
 
 Support for software development, testing, modeling, and benchmarking provided by the Cell Annotation Platform team 
 (Roman Mukhin, Andrey Isaev, Uğur Bayındır)
+
+Citation
+--------
+If scTab is helpful in your research, please consider citing the following [paper](https://www.nature.com/articles/s41467-024-51059-5)
+
+```
+Fischer, Felix, David S. Fischer, Roman Mukhin, Andrey Isaev, Evan Biederstedt, Alexandra-Chloé Villani, and Fabian J. Theis. 2024. “scTab: Scaling Cross-Tissue Single-Cell Annotation Models.” Nature Communications 15 (1). https://doi.org/10.1038/s41467-024-51059-5.
+```
